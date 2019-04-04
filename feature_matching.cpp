@@ -43,9 +43,7 @@ void visualizeMatches(Mat &output_image, Point2f parent, Point2f match, float sc
 	Point2f pt_2(.5*output_image.cols + sc*match.x, sc*match.y);	
 	cv::circle(output_image, pt_2,3, Scalar(1,111,197), LINE_4);
 	
-	cv::line(output_image, pt_1, pt_2, Scalar(rand() % max + min,
-														rand() % max + min,
-														rand() % max + min));
+	cv::line(output_image, pt_1, pt_2, Scalar(rand() % max + min, rand() % max + min, rand() % max + min));
 }
 
 Mat getBlock(Mat img, Point2f point, int window_size)
