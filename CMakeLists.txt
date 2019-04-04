@@ -37,8 +37,6 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Pangolin 0.4 REQUIRED)
-
-
 find_package(OpenGL 2.0)
 find_package(GLUT REQUIRED)
 

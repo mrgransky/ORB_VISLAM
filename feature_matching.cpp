@@ -1,5 +1,4 @@
 #include <opencv2/opencv.hpp>
-
 #include "opencv2/opencv_modules.hpp"
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -18,10 +17,7 @@
 using namespace std;
 using namespace cv;
 
-
-void visualizeKeyPoints(Mat &output_image, 	vector<KeyPoint> keyP1, 
-											vector<KeyPoint> keyP2, 
-											float sc)
+void visualizeKeyPoints(Mat &output_image, 	vector<KeyPoint> keyP1, vector<KeyPoint> keyP2, float sc)
 {
 	for (size_t i = 0; i < keyP1.size(); i++)
 	{
@@ -36,9 +32,7 @@ void visualizeKeyPoints(Mat &output_image, 	vector<KeyPoint> keyP1,
 	}
 }
 
-void visualizeMatches(Mat &output_image, Point2f parent,
-					 					Point2f match,
-										float sc)
+void visualizeMatches(Mat &output_image, Point2f parent, Point2f match, float sc)
 {
 	int min = 0;
 	int max = 255;
@@ -92,9 +86,7 @@ int getSSD(Mat block_r, Mat block_c)
 	return ssd;
 }
 
-vector<pair<int,int>> getMatches(	Mat img_1, Mat img_2,
-									vector<KeyPoint> keyP1, 
-									vector<KeyPoint> keyP2)
+vector<pair<int,int>> getMatches(Mat img_1, Mat img_2, vector<KeyPoint> keyP1, vector<KeyPoint> keyP2)
 {
 	vector<pair<int,int>> matches; 
 
@@ -165,6 +157,7 @@ vector<pair<int,int>> crossCheckMatching(vector <pair<int,int>> C2R, vector <pai
 	}
 	return CrossCheckedMatches;
 }
+
 int main( int argc, char** argv )
 {
 	if( argc != 3 )
@@ -185,7 +178,6 @@ int main( int argc, char** argv )
 	{
 		cvtColor(imgR,imgR,CV_GRAY2BGR);
 	}
-
 		
 	if(imgC.channels()<3) //this should be always true
 	{
@@ -311,15 +303,6 @@ int main( int argc, char** argv )
 		visualizeMatches(output_image, keyR[parent].pt, keyC[match].pt, scale);
 	}
 	
-	//cout<<setw(80)<<"*.*"<<endl;
-
-	
-	
-	
-	
-	
-	
-		
 	stringstream s_i1;
 	int f_k = 1;
 	int f_k_plus_1 = 2;
@@ -328,7 +311,6 @@ int main( int argc, char** argv )
 	cv::putText(output_image,s_i1.str(),cv::Point(.01*output_image.cols,.1*output_image.rows),
     				cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255),2,LINE_4);
 		
-	// current keyP on img_2:
 	stringstream s_i2;
 	s_i2 << "Current Frame = "+to_string(f_k_plus_1);
 		
@@ -338,6 +320,5 @@ int main( int argc, char** argv )
 
 	imshow(frameWinName,output_image);
 	waitKey();
-	return 0;
-	
+	return 0;	
 }
