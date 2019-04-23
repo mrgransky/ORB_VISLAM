@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-project(slam)
+project(vi_slam)
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)
@@ -54,19 +54,19 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-add_executable(${PROJECT_NAME}_match_Left_Right feature_match_two_images.cpp)
+add_executable(${PROJECT_NAME}_match_Left_Right src/feature_match_two_images.cpp)
 target_link_libraries(${PROJECT_NAME}_match_Left_Right
 ${LIBS}
 )
 
 
-add_executable(${PROJECT_NAME}_VO VO.cpp)
+add_executable(${PROJECT_NAME}_VO src/VO.cpp)
 target_link_libraries(${PROJECT_NAME}_VO
 ${LIBS}
 )
 
 
-add_executable(${PROJECT_NAME}_feature_matching FM.cpp)
+add_executable(${PROJECT_NAME}_feature_matching src/FM.cpp)
 target_link_libraries(${PROJECT_NAME}_feature_matching
 ${LIBS}
 )
