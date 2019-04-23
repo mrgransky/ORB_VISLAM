@@ -55,7 +55,19 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-add_executable(${PROJECT_NAME}_feature_match feature_matching.cpp)
-target_link_libraries(${PROJECT_NAME}_feature_match
+add_executable(${PROJECT_NAME}_match_Left_Right feature_match_two_images.cpp)
+target_link_libraries(${PROJECT_NAME}_match_Left_Right
+${LIBS}
+)
+
+
+add_executable(${PROJECT_NAME}_VO VO.cpp)
+target_link_libraries(${PROJECT_NAME}_VO
+${LIBS}
+)
+
+
+add_executable(${PROJECT_NAME}_feature_matching FM.cpp)
+target_link_libraries(${PROJECT_NAME}_feature_matching
 ${LIBS}
 )
