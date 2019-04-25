@@ -39,7 +39,8 @@ find_package(Pangolin 0.4 REQUIRED)
 find_package(OpenGL 2.0)
 find_package(GLUT REQUIRED)
 
-include_directories( ${OPENGL_INCLUDE_DIRS} 
+include_directories( include
+						${OPENGL_INCLUDE_DIRS} 
 						${GLUT_INCLUDE_DIRS} 
 						${Pangolin_INCLUDE_DIRS}
 						${EIGEN3_INCLUDE_DIR})
@@ -54,19 +55,10 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-add_executable(${PROJECT_NAME}_match_Left_Right src/feature_match_two_images.cpp)
-target_link_libraries(${PROJECT_NAME}_match_Left_Right
-${LIBS}
-)
-
-
-add_executable(${PROJECT_NAME}_VO src/VO.cpp)
-target_link_libraries(${PROJECT_NAME}_VO
-${LIBS}
-)
-
-
-add_executable(${PROJECT_NAME}_feature_matching src/FM.cpp)
-target_link_libraries(${PROJECT_NAME}_feature_matching
-${LIBS}
-)
+add_executable(${PROJECT_NAME}_absPose 
+				src/main.cpp
+				src/System.cpp
+				src/AbsolutePose.cpp
+				src/Visualizer.cpp
+				)
+target_link_libraries(${PROJECT_NAME}_absPose ${LIBS})

@@ -8,7 +8,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <stdio.h>      /* printf, fopen */
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
-
+#include "VO.h"
 using namespace std;
 using namespace cv;
 #define PI 3.1415926f
