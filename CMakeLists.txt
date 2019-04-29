@@ -55,6 +55,14 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
+add_executable(${PROJECT_NAME}_temp 
+				src/mainTemp.cpp
+				src/temp.cpp
+				)
+target_link_libraries(${PROJECT_NAME}_temp ${LIBS})
+
+
+
 add_executable(${PROJECT_NAME}_absPose 
 				src/main.cpp
 				src/System.cpp

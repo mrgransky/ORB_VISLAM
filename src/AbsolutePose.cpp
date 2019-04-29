@@ -34,24 +34,26 @@ AbsolutePose::AbsolutePose(double &ref_lat, double &ref_lng, double &ref_alt)
 /* Absolute Position using GNSS/INS
 Given:
 */
-Mat AbsolutePose::getPose(double &lat, double &lng, double &alt, 
+void AbsolutePose::getPose(double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading)
 {
-	Mat T;
 	Mat t_abs = lla2ENU(lat, lng, alt);
 	Mat R_abs = abs_rot(roll, pitch, heading);
 	CurrentPose(R_abs, t_abs);
-	T_abs.copyTo(T);
-	return T; 
 }
 
 void AbsolutePose::CurrentPose(Mat &R_abs, Mat &t_abs)
 {
-//	Mat T_abs = Mat::eye(4,4,CV_32F);
-	Mat center = -R_abs.inv()*t_abs;
+	//Mat center = -R_abs.inv()*t_abs;
+	Mat center = t_abs;
 	
 	center.copyTo(T_abs.rowRange(0,3).col(3));
 	R_abs.copyTo(T_abs.rowRange(0,3).colRange(0,3));
+	
+	
+	
+	
+	cout << "T_abs =\n" << T_abs<< endl;
 }
 
 Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
@@ -109,9 +111,6 @@ Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
 	return t;
 }
 
-//Mat AbsolutePose::abs_rot(	const float &phi, 	/* roll */
-//							const float &theta, /* pitch */
-//							const float &psi	/* yaw */)
 Mat AbsolutePose::abs_rot(	double &phi, 	/* roll */
 							double &theta, 	/* pitch */
 							double &psi		/* yaw */)

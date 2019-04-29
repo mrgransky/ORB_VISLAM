@@ -18,21 +18,23 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(double _id)
+Visualizer::Visualizer(Mat TransformationMatrix)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\t\tVIEWER"															<< endl;
+	cout << "\t\t\tVISUALIZER"															<< endl;
 	cout << "#########################################################################" << endl;
-	cout << _id<< endl;
+	
+	T_ = TransformationMatrix;
 }
 
-/*struct Viewer::Triplet
+struct Visualizer::Triplet
 {
 	float x, y, z;
-}
+};
 
-void Viewer::visualizeKeyPoints(Mat &output_image, vector<KeyPoint> kp, float sc, string id_str)
+
+/*void Viewer::visualizeKeyPoints(Mat &output_image, vector<KeyPoint> kp, float sc, string id_str)
 {	
 	if (!ref_kp.empty())
 	{
@@ -72,12 +74,12 @@ void Viewer::visualizeMatches(Mat &output_image, Point2f parent, Point2f match, 
 	
 	cv::line(output_image, pt_1, pt_2, Scalar(rand() % max + min, 
 				rand() % max + min, rand() % max + min));
-}
+}*/
 
-void Viewer::run(Mat T)
-{
-	float width = 800;
-    float heigth = 600;
+void Visualizer::run()
+{	
+	float width = 1600;
+    float heigth = 900;
     
     pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
     glEnable(GL_DEPTH_TEST);
@@ -88,7 +90,7 @@ void Viewer::run(Mat T)
     
     
     pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(width, heigth, 500, 500, .1*width, .93*heigth, .2, 100),
+        pangolin::ProjectionMatrix(width, heigth, 500, 500, .9*width, .1*heigth, .2, 100),
         pangolin::ModelViewLookAt(0,0,1, 0,0,0, pangolin::AxisY)
         //pangolin::ModelViewLookAt(0,-1,0,0,0,0, 0,0,1) // equivalent
     );
@@ -104,40 +106,79 @@ void Viewer::run(Mat T)
 	// Camera in World Coordinate:
     pangolin::OpenGlMatrix cw;
     cw.SetIdentity();
-
+	
+	vector<Triplet> vertices;
+	vector<pangolin::OpenGlMatrix> KeyFrames;
+	
+	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
 	{
         // Clear screen and activate view to render into
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			
-		//s_cam.Follow(Tcw);	
+				
 		d_cam.Activate(s_cam);
 		glClearColor(1,1,1,1);
 		
+
+		Triplet cur_pt;
 		draw_wrd_axis();
 
-		Triplet ref_pt, cur_pt;
-
-		cw = getCurrentCameraPose(T);
+		cw = currentPose(T_);
+		
+		if (counter_KF%50 == 0)
+		{
+			KeyFrames.push_back(cw);
+		}
 		draw_camera(cw);
+		draw_KF(KeyFrames);	
 			
-		cur_pt.x = T.at<float>(0,3);
-		cur_pt.y = T.at<float>(1,3);
-		cur_pt.z = T.at<float>(2,3);
-			
-		draw_path(ref_pt, cur_pt , 1 , 1, 0);	
-		ref_pt = cur_pt;
+		//s_cam.Follow(cw);
+		cur_pt.x = T_.at<float>(0,3);
+		cur_pt.y = T_.at<float>(1,3);
+		cur_pt.z = T_.at<float>(2,3);
+		
+		vertices.push_back(cur_pt);
+		draw_path(vertices);
+		counter_KF++;
 		pangolin::FinishFrame();
 	}
 }
 
-pangolin::OpenGlMatrix Viewer::getCurrentCameraPose()
+pangolin::OpenGlMatrix Visualizer::currentPose(Mat T)
 {
-	pangolin::OpenGlMatrix cw;
-	return cw;
+	pangolin::OpenGlMatrix curPose;
+	
+	Mat Rc(3,3,CV_32F);
+	Mat tc(3,1,CV_32F);
+	
+	Rc = T.rowRange(0,3).colRange(0,3);
+	tc = T.rowRange(0,3).col(3);
+	
+		
+	curPose.m[0]  = Rc.at<float>(0,0);
+	curPose.m[1]  = Rc.at<float>(1,0);
+	curPose.m[2]  = Rc.at<float>(2,0);
+	curPose.m[3]  = 0.0;
+	
+	curPose.m[4]  = Rc.at<float>(0,1);
+	curPose.m[5]  = Rc.at<float>(1,1);
+	curPose.m[6]  = Rc.at<float>(2,1);
+	curPose.m[7]  = 0.0;
+
+	curPose.m[8]  = Rc.at<float>(0,2);
+	curPose.m[9]  = Rc.at<float>(1,2);
+	curPose.m[10] = Rc.at<float>(2,2);
+	curPose.m[11] = 0.0;
+
+	curPose.m[12] = tc.at<float>(0);
+	curPose.m[13] = tc.at<float>(1);
+	curPose.m[14] = tc.at<float>(2);
+	curPose.m[15] = 1.0;
+	
+	return curPose;
 }
 
-void Viewer::draw_wrd_axis()
+void Visualizer::draw_wrd_axis()
 {
 	glColor3f(1,0,0); // red x
 	glBegin(GL_LINES);
@@ -177,20 +218,88 @@ void Viewer::draw_wrd_axis()
 	glFlush();
 }
 
-void Viewer::draw_path(Triplet ref, Triplet cur, float r, float g, float b)
+void Visualizer::draw_path(vector<Triplet> &vertices)
 {
 	glLineWidth(.9);
-	glColor4f(r, g, b,1);
+	glColor4f(.84, .83, .1,1);
 	glBegin(GL_LINES);
 	
-	glVertex3f(ref.x, ref.y, ref.z);
-	glVertex3f(cur.x, cur.y, cur.z);
-	
+	for (size_t i = 1; i < vertices.size(); i++)
+	{
+		glVertex3f(vertices[i-1].x, vertices[i-1].y, vertices[i-1].z);
+		glVertex3f(vertices[i].x, vertices[i].y, vertices[i].z);
+	}
 	glEnd();
 	glFlush();
 }
 
-void Viewer::draw_camera(pangolin::OpenGlMatrix &Tc)
+void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
+{
+    const float w = .03;
+    const float h = w*1;
+    const float z = w*1;
+
+	glLineWidth(.8);
+	glBegin(GL_LINES);
+	
+
+	for (size_t i = 0; i < KeyFrames.size(); i++)
+	{
+		glPushMatrix();
+
+#ifdef HAVE_GLES
+        glMultMatrixf(KeyFrames[i].m);
+#else
+        glMultMatrixd(KeyFrames[i].m);
+#endif
+
+		// camera axis: X  red.
+		glColor3f (1,0,0);
+		glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);
+    	glVertex3f(KeyFrames[i].m[12]+.07, KeyFrames[i].m[13], KeyFrames[i].m[14]);
+    	
+    	glColor3f (0,1,0);  	//Y green.	
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]); 	
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13]+.07, KeyFrames[i].m[14]);
+    	
+    	glColor3f (0,0,1);  	//Z  blue.
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]+.07);
+		
+		
+		glColor3f(.1,.91,.95);
+		glVertex3f(KeyFrames[i].m[12], 		KeyFrames[i].m[13], 		KeyFrames[i].m[14]);	
+		glVertex3f(w+KeyFrames[i].m[12],	h+KeyFrames[i].m[13],		z+KeyFrames[i].m[14]);
+		
+		glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);	
+		glVertex3f(w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);	
+		glVertex3f(-w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);	
+		glVertex3f(-w+KeyFrames[i].m[12],h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(w+KeyFrames[i].m[12],h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		glVertex3f(w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(-w+KeyFrames[i].m[12],h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		glVertex3f(-w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(-w+KeyFrames[i].m[12],h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		glVertex3f(w+KeyFrames[i].m[12],h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		
+		glVertex3f(-w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+		glVertex3f(w+KeyFrames[i].m[12],-h+KeyFrames[i].m[13],z+KeyFrames[i].m[14]);
+	}
+	
+    glEnd();
+    glFlush();
+    glPopMatrix();
+}
+
+
+void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
 {
 	glPushMatrix();
 
@@ -240,6 +349,6 @@ void Viewer::draw_camera(pangolin::OpenGlMatrix &Tc)
     glEnd();
     glFlush();
     glPopMatrix();
-}*/
+}
 
 }

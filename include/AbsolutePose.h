@@ -25,14 +25,14 @@ namespace ORB_VISLAM
 								double &theta, 	/* pitch */
 								double &psi		/* yaw */);
 					
-			cv::Mat getPose( 	double &lat, double &lng, double &alt, 
-								double &roll, double &pitch, double &heading);
+			void getPose( 	double &lat, double &lng, double &alt, 
+							double &roll, double &pitch, double &heading);
 			void CurrentPose(cv::Mat &R_abs, cv::Mat &t_abs);
 			const int earth_rad = 6378137;
 			const double f_inv = 298.257224f;
 			const double f = 1.0 / f_inv;
 			
-			cv::Mat T_abs = cv::Mat::eye(4,4,CV_32F);
+			cv::Mat T_abs = cv::Mat::eye(4, 4, CV_32F);
 		private:
 			double latRef, lngRef, altRef;
 	};

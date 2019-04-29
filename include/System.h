@@ -1,20 +1,23 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
 #include <pangolin/pangolin.h>
 
-#include <opencv2/core/eigen.hpp>
-#include <stdio.h>      /* printf, fopen */
-#include <stdlib.h>     /* exit, EXIT_FAILURE */
+#include <limits>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <stdio.h>
+#include <stdlib.h>
 #include <thread>
 #include <time.h>
+
 #include "AbsolutePose.h"
-//#include "Viewer.h"
+#include "Visualizer.h"
 
 
 namespace ORB_VISLAM
@@ -24,15 +27,27 @@ namespace ORB_VISLAM
 		public:
 			System(const std::string &settingFilePath, 
 					double &ref_lat, double &ref_lng, double &ref_alt);
-			cv::Mat run_abs_pose(double &lat, double &lng, double &alt, 
-							double &roll, double &pitch, double &heading);
+			~System();
+					
+			void run(double &lat, double &lng, double &alt, 
+							double &roll, double &pitch, double &heading, std::ofstream &file_);
 		private:
-			AbsolutePose absPose;
+			//AbsolutePose init_absPose;
+			AbsolutePose* absPosePtr;
+			void saveTraj(cv::Mat T, std::ofstream &file_);
+			
+			//Visualizer init_visualizer;
+			Visualizer* visPtr;
+			
+			
+			cv::Mat Tw = cv::Mat::eye(4, 4, CV_32F);
 			clock_t tStart, tEnd;
+			
 			double runTime;
     		cv::Mat mK;
     		cv::Mat mDistCoef;
-			
+			std::thread* visThread;
+			std::thread* absPoseThread;
 	};
 
 }// namespace ORB_VISLAM

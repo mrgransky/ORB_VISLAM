@@ -10,7 +10,7 @@
 #include <thread>
 
 #include <time.h>
-//#include "System.h"
+#include "System.h"
 using namespace std;
 using namespace cv;
 #define PI 3.1415926f
@@ -116,7 +116,7 @@ int main( int argc, char** argv )
     load_GNSS_INS(gnss_insFile, ang, geo);
     
     
-    //ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
+    ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
 
 	// assign ref values for lat, lng, alt:
 	//ORB_VISLAM::AbsolutePose absPose(geo.lat[0], geo.lng[0], geo.alt[0]);
@@ -137,7 +137,7 @@ int main( int argc, char** argv )
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
 	{
-		if(ni%2000 == 0) 
+		if(ni%1 == 0) 
 		{
 			keyIMG.push_back(ni);
 		}
@@ -146,6 +146,12 @@ int main( int argc, char** argv )
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
 	
+	string traj = string(argv[1])+"frames/traj.txt";
+	ofstream f;
+	f.open(traj.c_str());
+	f << fixed;
+	f << "x,y,z"<< endl;
+
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
 	//for(int ni = 0; ni < nImages; ni++) 
@@ -168,16 +174,14 @@ int main( int argc, char** argv )
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 
-		/*Mat T_abs = mySLAM.run_abs_pose(geo.lat[keyIMG[ni]], 
-										geo.lng[keyIMG[ni]], 
-										geo.alt[keyIMG[ni]],
-										ang.roll[keyIMG[ni]], 
-										ang.pitch[keyIMG[ni]], 
-										ang.heading[keyIMG[ni]]);
-	
-	
-	
-		cout << "T_abs =\n" << T_abs<< endl;*/
+
+		mySLAM.run(geo.lat[keyIMG[ni]], 
+					geo.lng[keyIMG[ni]], 
+					geo.alt[keyIMG[ni]],
+					ang.roll[keyIMG[ni]], 
+					ang.pitch[keyIMG[ni]], 
+					ang.heading[keyIMG[ni]], f);
+
 	
 		/*string img_id_str = imgName[keyIMG[ni]];
 		

@@ -18,19 +18,22 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(double _id);
-			/*struct Triplet;
+			Visualizer(cv::Mat TransformationMatrix);
+			struct Triplet;
 			void visualizeMatches(cv::Mat &output_image, cv::Point2f parent, 
 									cv::Point2f match, float sc);
-			void draw_camera(pangolin::OpenGlMatrix &Tc);
 			void visualizeKeyPoints(cv::Mat &output_image, 
 									std::vector<cv::KeyPoint> kp, 
 									float sc, std::string id_str);
-			//void draw_path(Triplet ref, Triplet cur, float r, float g, float b);
 			void draw_wrd_axis();
-			void run(cv::Mat T);
-			pangolin::OpenGlMatrix getCurrentCameraPose();*/
+			void run();
+			pangolin::OpenGlMatrix currentPose(cv::Mat T);
 		private:
+			cv::Mat T_ = cv::Mat::eye(4, 4, CV_32F);
+			void draw_path(std::vector<Triplet> &vertices);
+			void draw_camera(pangolin::OpenGlMatrix &Tc);
+			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
+
 	};
 
 }// namespace ORB_VISLAM

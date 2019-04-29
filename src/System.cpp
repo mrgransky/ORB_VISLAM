@@ -1,14 +1,3 @@
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <pangolin/pangolin.h>
-
-#include <opencv2/core/eigen.hpp>
-#include <stdio.h>      /* printf, fopen */
-#include <stdlib.h>     /* exit, EXIT_FAILURE */
-#include <thread>
 #include "System.h"
 
 using namespace std;
@@ -18,10 +7,11 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-System::System(const std::string &settingFilePath, 
+System::System(const string &settingFilePath, 
 				double &ref_lat, 
 				double &ref_lng, 
-				double &ref_alt):absPose(ref_lat, ref_lng, ref_alt)
+				double &ref_alt)/*:	init_absPose(ref_lat, ref_lng, ref_alt),
+									init_visualizer()*/
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -56,7 +46,6 @@ System::System(const std::string &settingFilePath,
         DistCoef.resize(5);
         DistCoef.at<float>(4) = k3;
     }
-    
     DistCoef.copyTo(mDistCoef);
     
 	cout << "\n\n" << endl;
@@ -75,13 +64,33 @@ System::System(const std::string &settingFilePath,
     cout << "- p1: " << DistCoef.at<float>(2) << endl;
     cout << "- p2: " << DistCoef.at<float>(3) << endl;
 	
+	// initialize absPose class
+	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
+	
+	// initialize visualizer class
+	visPtr 			= new Visualizer(absPosePtr->T_abs);
+	
+	// run visualizer thread
+	visThread 		= new thread(&Visualizer::run, visPtr);
+	
 }
 
-Mat System::run_abs_pose(double &lat, double &lng, double &alt, 
-							double &roll, double &pitch, double &heading)
+System::~System()
 {
-	return absPose.getPose(lat, lng, alt, roll, pitch, heading);
+	visThread->join();
+}
 
+void System::run(double &lat, double &lng, double &alt, 
+					double &roll, double &pitch, double &heading, ofstream &file_)
+{
+	absPosePtr->getPose(lat, lng, alt, roll, pitch, heading);
+	saveTraj(absPosePtr->T_abs, file_);
+}
+void System::saveTraj(Mat T, ofstream &file_)
+{
+	file_	<< setprecision(15)	<< T.at<float>(0,3) 	<< ","
+			<< setprecision(15)	<< T.at<float>(1,3) 	<< ","
+			<< setprecision(15)	<< T.at<float>(2,3) 	<< endl;
 }
 
 }
