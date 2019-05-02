@@ -125,9 +125,7 @@ int main( int argc, char** argv )
     int nImages = imgName.size();
 
 	ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
-	//ORB_VISLAM::System mySYS;
 	
-    
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
 	{
@@ -199,5 +197,6 @@ int main( int argc, char** argv )
     runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
     
     cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
+    mySLAM.shutdown();
 	return 0;
 }

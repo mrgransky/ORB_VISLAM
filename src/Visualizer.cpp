@@ -18,7 +18,7 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat &im, Mat TransformationMatrix)
+Visualizer::Visualizer(Mat &im, Mat TransformationMatrix, bool &frame_avl)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -26,6 +26,9 @@ Visualizer::Visualizer(Mat &im, Mat TransformationMatrix)
 	cout << "#########################################################################" << endl;
 	T_ = TransformationMatrix;
 	imgRef = im;
+	hasFrame = frame_avl;
+	
+	cout << "has frame init with: \t"<< hasFrame<< endl;
 }
 
 struct Visualizer::Triplet
@@ -85,11 +88,13 @@ void Visualizer::openCV_()
 {
 	if(!vImg.empty())
 	{
-		while(1)
+		while(hasFrame)
 		{
 			imshow(frameWinName, vImg);
 			waitKey(39);
 		}
+		destroyWindow(frameWinName);
+		cout << "while opencv ended!" << endl;
 	}
 }
 
@@ -102,9 +107,6 @@ void Visualizer::openGL_()
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Define Projection and initial ModelView matrix
-    
     
     pangolin::OpenGlRenderState s_cam(
         pangolin::ProjectionMatrix(width, heigth, 500, 500, .9*width, .1*heigth, .2, 100),
@@ -163,85 +165,9 @@ void Visualizer::openGL_()
 
 void Visualizer::run()
 {
-
 	thread t1(&Visualizer::openCV_, this);
 	thread t2(&Visualizer::openGL_, this);
 
-	/*if(!vImg.empty())
-	{
-		while(1)
-		{
-			imshow(frameWinName, vImg);
-			waitKey(39);
-		}
-	}
-
-	float width = 1600;
-    float heigth = 900;
-    
-    pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
-    glEnable(GL_DEPTH_TEST);
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Define Projection and initial ModelView matrix
-    
-    
-    pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(width, heigth, 500, 500, .9*width, .1*heigth, .2, 100),
-        pangolin::ModelViewLookAt(0,0,1, 0,0,0, pangolin::AxisY)
-        //pangolin::ModelViewLookAt(0,-1,0,0,0,0, 0,0,1) // equivalent
-    );
-
-    // Create Interactive View in window
-    pangolin::Handler3D handler(s_cam);
-    
-    pangolin::View& d_cam = pangolin::CreateDisplay()
-            .SetBounds(0.0, 1.0, 0.0, 1.0, width/heigth)
-            .SetHandler(&handler);
-
-
-	// Camera in World Coordinate:
-    pangolin::OpenGlMatrix cw;
-    cw.SetIdentity();
-	
-	vector<Triplet> vertices;
-	vector<pangolin::OpenGlMatrix> KeyFrames;
-	
-	int counter_KF = 0;
-	while(!pangolin::ShouldQuit())
-	{
-        // Clear screen and activate view to render into
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				
-		d_cam.Activate(s_cam);
-		glClearColor(1,1,1,1);
-		
-
-		Triplet cur_pt;
-		draw_wrd_axis();
-
-		cw = currentPose(T_);
-		
-		if (counter_KF%50 == 0)
-		{
-			KeyFrames.push_back(cw);
-		}
-		draw_camera(cw);
-		draw_KF(KeyFrames);	
-			
-		//s_cam.Follow(cw);
-		cur_pt.x = T_.at<float>(0,3);
-		cur_pt.y = T_.at<float>(1,3);
-		cur_pt.z = T_.at<float>(2,3);
-		
-		vertices.push_back(cur_pt);
-		draw_path(vertices);
-		counter_KF++;
-		pangolin::FinishFrame();
-	}*/
-	
-	
 	t1.join();
 	t2.join();
 }

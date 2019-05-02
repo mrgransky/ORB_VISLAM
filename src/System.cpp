@@ -17,7 +17,7 @@ System::System(	const string &settingFilePath,
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\t\tSYSTEN"															<< endl;
 	cout << "#########################################################################" << endl;
-	
+	frame_avl = true;
 	FileStorage fSettings(settingFilePath, FileStorage::READ);
     float fx 			= fSettings["Camera.fx"];
     float fy 			= fSettings["Camera.fy"];
@@ -71,7 +71,7 @@ System::System(	const string &settingFilePath,
 	visionPtr		= new Vision();
 	
 	// initialize visualizer class
-	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs);
+	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs, frame_avl);
 	
 	// run visualizer thread
 	visThread 		= new thread(&Visualizer::run, visualizerPtr);
@@ -83,7 +83,8 @@ System::~System()
 }
 
 void System::run(Mat &raw_frame, double &lat, double &lng, double &alt, 
-					double &roll, double &pitch, double &heading, ofstream &file_)
+					double &roll, double &pitch, double &heading, 
+					ofstream &file_)
 {
 	Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
 	
@@ -94,11 +95,18 @@ void System::run(Mat &raw_frame, double &lat, double &lng, double &alt,
 	saveTraj(absPosePtr->T_abs, file_);
 	
 }
+
 void System::saveTraj(Mat T, ofstream &file_)
 {
 	file_	<< setprecision(15)	<< T.at<float>(0,3) 	<< ","
 			<< setprecision(15)	<< T.at<float>(1,3) 	<< ","
 			<< setprecision(15)	<< T.at<float>(2,3) 	<< endl;
+}
+void System::shutdown()
+{
+	frame_avl = false;
+	visualizerPtr->hasFrame = false;
+	cout << "system is shutting down!" << endl;
 }
 }
 

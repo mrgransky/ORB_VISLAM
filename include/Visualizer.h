@@ -18,7 +18,7 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(cv::Mat &im, cv::Mat TransformationMatrix);
+			Visualizer(cv::Mat &im, cv::Mat TransformationMatrix, bool &frame_avl);
 			
 			struct Triplet;
 			void visualizeMatches(cv::Mat &output_image, cv::Point2f parent, 
@@ -33,12 +33,12 @@ namespace ORB_VISLAM
 			cv::Mat vImg = cv::Mat::zeros(640, 480, CV_8UC3);
 			void show(cv::Mat &frame);
 			
+			bool hasFrame;
 			pangolin::OpenGlMatrix currentPose(cv::Mat T);
 		private:
 			std::string frameWinName = "frames";
 			cv::Mat T_;
 			cv::Mat imgRef;
-			
 			std::mutex visualizerMutex;
 			
 			void draw_path(std::vector<Triplet> &vertices);

@@ -35,18 +35,19 @@ namespace ORB_VISLAM
 			
 			void run(cv::Mat &frame, double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading, std::ofstream &file_);
+		
+			void shutdown();
 		private:
 			//AbsolutePose init_absPose;
 			AbsolutePose* absPosePtr;
 			void saveTraj(cv::Mat T, std::ofstream &file_);
-			
 			//Visualizer init_visualizer;
 			Visualizer* visualizerPtr;
 			Vision*		visionPtr;
 			
 			//cv::Mat Tw = cv::Mat::eye(4, 4, CV_32F);
 			clock_t tStart, tEnd;
-			
+			bool frame_avl;
 			double runTime;
     		cv::Mat mK;
     		cv::Mat mDistCoef;
