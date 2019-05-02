@@ -44,7 +44,8 @@ namespace ORB_VISLAM
 			void draw_path(std::vector<Triplet> &vertices);
 			void draw_camera(pangolin::OpenGlMatrix &Tc);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
-			
+			void openCV_();
+			void openGL_();
 			
 			
 	};
