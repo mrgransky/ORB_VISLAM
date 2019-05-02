@@ -7,7 +7,7 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-System::System(const string &settingFilePath, 
+System::System(	const string &settingFilePath, 
 				double &ref_lat, 
 				double &ref_lng, 
 				double &ref_alt)/*:	init_absPose(ref_lat, ref_lng, ref_alt),
@@ -26,7 +26,7 @@ System::System(const string &settingFilePath,
 	
 	Mat K = Mat::eye(3, 3, CV_32F);
 	
-    K.at<float>(0,0) 		= fx;
+	K.at<float>(0,0) 		= fx;
     K.at<float>(1,1) 		= fy;
     K.at<float>(0,2) 		= cx;
     K.at<float>(1,2) 		= cy;
@@ -64,15 +64,17 @@ System::System(const string &settingFilePath,
     cout << "- p1: " << DistCoef.at<float>(2) << endl;
     cout << "- p2: " << DistCoef.at<float>(3) << endl;
 	
-	// initialize absPose class
+	// initialize absPose class:
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
+	// init vision class:
+	visionPtr		= new Vision();
+	
 	// initialize visualizer class
-	visPtr 			= new Visualizer(absPosePtr->T_abs);
+	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs);
 	
 	// run visualizer thread
-	visThread 		= new thread(&Visualizer::run, visPtr);
-	
+	visThread 		= new thread(&Visualizer::run, visualizerPtr);
 }
 
 System::~System()
@@ -80,11 +82,17 @@ System::~System()
 	visThread->join();
 }
 
-void System::run(double &lat, double &lng, double &alt, 
+void System::run(Mat &raw_frame, double &lat, double &lng, double &alt, 
 					double &roll, double &pitch, double &heading, ofstream &file_)
 {
-	absPosePtr->getPose(lat, lng, alt, roll, pitch, heading);
+	Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
+	
+	visualizerPtr->show(AnalyzedFrame);
+	
+	
+	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
 	saveTraj(absPosePtr->T_abs, file_);
+	
 }
 void System::saveTraj(Mat T, ofstream &file_)
 {
@@ -92,6 +100,5 @@ void System::saveTraj(Mat T, ofstream &file_)
 			<< setprecision(15)	<< T.at<float>(1,3) 	<< ","
 			<< setprecision(15)	<< T.at<float>(2,3) 	<< endl;
 }
-
 }
 

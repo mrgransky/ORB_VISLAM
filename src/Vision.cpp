@@ -10,31 +10,29 @@
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include <thread>
 
-#include "FM.h"
+#include "Vision.h"
+
 using namespace std;
 using namespace cv;
 #define PI 3.1415926f
-string frameWinName;
-float rad2deg = 180 / PI;
-float d_inv1 = 1;
-
-
-vector<Mat> T_vec;
-
-struct Triplet
-{
-	float x, y, z;
-};
 
 namespace ORB_VISLAM
 {
 
 Vision::Vision()
 {
-
+	cout << "\n\n" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tVISION"																<< endl;
+	cout << "#########################################################################" << endl;
 }
 
-vector<KeyPoint> Vision::getKP(Mat img)
+Mat Vision::Analyze(Mat &image)
+{
+	return image;
+}
+
+/*vector<KeyPoint> Vision::getKP(Mat img)
 {
 	cout << "\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -266,6 +264,6 @@ void Vision::matching(Mat img, vector<KeyPoint> kp)
 	{
 		cout << "Matching cannot proceed!\nref_kp empty!!" << endl;
 	}
-}
+}*/
 
 }//namespace ORB_VISLAM

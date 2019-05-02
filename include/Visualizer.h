@@ -18,7 +18,8 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(cv::Mat TransformationMatrix);
+			Visualizer(cv::Mat &im, cv::Mat TransformationMatrix);
+			
 			struct Triplet;
 			void visualizeMatches(cv::Mat &output_image, cv::Point2f parent, 
 									cv::Point2f match, float sc);
@@ -27,13 +28,25 @@ namespace ORB_VISLAM
 									float sc, std::string id_str);
 			void draw_wrd_axis();
 			void run();
+			
+			
+			cv::Mat vImg = cv::Mat::zeros(640, 480, CV_8UC3);
+			void show(cv::Mat &frame);
+			
 			pangolin::OpenGlMatrix currentPose(cv::Mat T);
 		private:
-			cv::Mat T_ = cv::Mat::eye(4, 4, CV_32F);
+			std::string frameWinName = "frames";
+			cv::Mat T_;
+			cv::Mat imgRef;
+			
+			std::mutex visualizerMutex;
+			
 			void draw_path(std::vector<Triplet> &vertices);
 			void draw_camera(pangolin::OpenGlMatrix &Tc);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
-
+			
+			
+			
 	};
 
 }// namespace ORB_VISLAM

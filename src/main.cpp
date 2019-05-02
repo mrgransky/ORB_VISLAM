@@ -11,6 +11,7 @@
 
 #include <time.h>
 #include "System.h"
+
 using namespace std;
 using namespace cv;
 #define PI 3.1415926f
@@ -115,23 +116,16 @@ int main( int argc, char** argv )
 	string gnss_insFile = string(argv[1])+"/matchedNovatelData.csv";
     load_GNSS_INS(gnss_insFile, ang, geo);
     
-    
-    ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
-
-	// assign ref values for lat, lng, alt:
-	//ORB_VISLAM::AbsolutePose absPose(geo.lat[0], geo.lng[0], geo.alt[0]);
-	
-	
-	
-	
 	//Mat img;
 	string imgFile = string(argv[1])+"/frames/rgb.txt"; // open rgb.txt from the img folder
-	//getCameraParamerters(argv[2], camera_matrix, dist_coeffs);
 	
 	vector<double> vTimestamps;		// retrieve ts 
 	vector<string> imgName; 		// retrieve img file names ex: rgb/frame_145.jpg
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
+
+	ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
+	//ORB_VISLAM::System mySYS;
 	
     
 	vector<size_t> keyIMG;
@@ -174,15 +168,9 @@ int main( int argc, char** argv )
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 
-
-		mySLAM.run(geo.lat[keyIMG[ni]], 
-					geo.lng[keyIMG[ni]], 
-					geo.alt[keyIMG[ni]],
-					ang.roll[keyIMG[ni]], 
-					ang.pitch[keyIMG[ni]], 
-					ang.heading[keyIMG[ni]], f);
-
-	
+		mySLAM.run(img, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
+					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], f);
+		
 		/*string img_id_str = imgName[keyIMG[ni]];
 		
 		int w = img.cols;

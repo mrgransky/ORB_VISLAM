@@ -34,15 +34,15 @@ AbsolutePose::AbsolutePose(double &ref_lat, double &ref_lng, double &ref_alt)
 /* Absolute Position using GNSS/INS
 Given:
 */
-void AbsolutePose::getPose(double &lat, double &lng, double &alt, 
+void AbsolutePose::calcPose(double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading)
 {
 	Mat t_abs = lla2ENU(lat, lng, alt);
 	Mat R_abs = abs_rot(roll, pitch, heading);
-	CurrentPose(R_abs, t_abs);
+	setCurrentPose(R_abs, t_abs);
 }
 
-void AbsolutePose::CurrentPose(Mat &R_abs, Mat &t_abs)
+void AbsolutePose::setCurrentPose(Mat &R_abs, Mat &t_abs)
 {
 	//Mat center = -R_abs.inv()*t_abs;
 	Mat center = t_abs;

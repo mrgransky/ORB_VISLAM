@@ -18,14 +18,14 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat TransformationMatrix)
+Visualizer::Visualizer(Mat &im, Mat TransformationMatrix)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tVISUALIZER"															<< endl;
 	cout << "#########################################################################" << endl;
-	
 	T_ = TransformationMatrix;
+	imgRef = im;
 }
 
 struct Visualizer::Triplet
@@ -76,9 +76,23 @@ void Viewer::visualizeMatches(Mat &output_image, Point2f parent, Point2f match, 
 				rand() % max + min, rand() % max + min));
 }*/
 
+void Visualizer::show(Mat &frame)
+{
+	vImg = frame;
+}
+
 void Visualizer::run()
-{	
-	float width = 1600;
+{
+	if(!vImg.empty())
+	{
+		while(1)
+		{
+			imshow(frameWinName, vImg);
+			waitKey(39);
+		}
+	}
+
+	/*float width = 1600;
     float heigth = 900;
     
     pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
@@ -141,7 +155,7 @@ void Visualizer::run()
 		draw_path(vertices);
 		counter_KF++;
 		pangolin::FinishFrame();
-	}
+	}*/
 }
 
 pangolin::OpenGlMatrix Visualizer::currentPose(Mat T)
@@ -350,5 +364,17 @@ void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
     glFlush();
     glPopMatrix();
 }
+
+/*Mat Visualizer::visualizeFrames(Mat &frame)
+{
+	Mat out;
+	resize(frame, f, Size(w_scaled, h_scaled));
+	f.copyTo(out(Rect(w_scaled, 0, w_scaled, h_scaled)));
+	
+		
+		
+	resize(ref, ref_img_tmp, Size(w_scaled, h_scaled));
+    ref_img_tmp.copyTo(out(Rect(0, 0, w_scaled, h_scaled)));
+}*/
 
 }

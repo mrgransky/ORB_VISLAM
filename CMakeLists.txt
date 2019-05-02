@@ -67,6 +67,7 @@ add_executable(${PROJECT_NAME}_absPose
 				src/main.cpp
 				src/System.cpp
 				src/AbsolutePose.cpp
+				src/Vision.cpp
 				src/Visualizer.cpp
 				)
 target_link_libraries(${PROJECT_NAME}_absPose ${LIBS})
