@@ -35,20 +35,19 @@ namespace ORB_VISLAM
     		
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp);
     		
-			int getSSD(cv::Mat block_r, cv::Mat block_c);
+			int getSSD(cv::Mat &block_r, cv::Mat &block_c);
+			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point, int window_size);
 			
-			
-    		std::vector <std::pair<int,int>> getMatches(cv::Mat &img_1, cv::Mat &img_2, 
+    		/*std::vector <std::pair<int,int>> getMatches(cv::Mat &img_1, cv::Mat &img_2, 
 														std::vector<cv::KeyPoint> &keyP1, 
-														std::vector<cv::KeyPoint> &keyP2);
+														std::vector<cv::KeyPoint> &keyP2);*/
 														
-			void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
-							std::vector<cv::KeyPoint> &keyP1, 
-							std::vector<cv::KeyPoint> &keyP2,
+			void getMatches(cv::Mat img_1, cv::Mat img_2, 
+							std::vector<cv::KeyPoint> keyP1, 
+							std::vector<cv::KeyPoint> keyP2,
 							std::vector<std::pair<int,int>> matches);
 														
 														
-			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point, int window_size);
 			std::vector<std::pair<int,int>> crossCheckMatching(	
 											std::vector <std::pair<int,int>> C2R,
 											std::vector <std::pair<int,int>> R2C);

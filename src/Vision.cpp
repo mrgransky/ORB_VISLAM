@@ -174,7 +174,7 @@ Mat Vision::getBlock(Mat &img, Point2f &point, int window_size)
 	return Block;
 }
 
-int Vision::getSSD(Mat block_r, Mat block_c)
+int Vision::getSSD(Mat &block_r, Mat &block_c)
 {
 	int ssd = 0;
 	for (int xx = 0; xx < block_c.rows; xx++)
@@ -208,16 +208,64 @@ vector<pair<int,int>> Vision::crossCheckMatching(vector <pair<int,int>> C2R, vec
 }
 
 
-void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
-							std::vector<cv::KeyPoint> &keyP1, 
-							std::vector<cv::KeyPoint> &keyP2,
-							std::vector<std::pair<int,int>> matches)
+void Vision::getMatches(Mat img_1, Mat img_2, 
+				vector<KeyPoint> keyP1, 
+				vector<KeyPoint> keyP2,
+				vector<pair<int,int>> matches)
 {
 	// TODO:
 	
-}
+	int window_size = 11;
+	double ssd_th = 50;
+	
+	Mat block_2 	= Mat::zeros(window_size, window_size, CV_32F);
+	Mat block_1 	= Mat::zeros(window_size, window_size, CV_32F);
+	vector<Point2f> kp2_vec;	
+	for(size_t i = 0; i < keyP2.size(); i++)
+	//for(size_t i = 0; i < 3; i++)
+	{
+		kp2_vec.push_back(keyP2[i].pt);
+		block_2 = getBlock(img_2, kp2_vec[i], window_size);
+		
+		//cout << "block_current =\n"<< block_2<< endl;
+		vector<int> ssd_vec;
+		vector<int> ssd_tmp_vec;
+		vector<Point2f> kp1_vec;
+		
+		//for (size_t j = 0; j < 4; j++)
+		for (size_t j = 0; j < keyP1.size(); j++)
+		{
+			kp1_vec.push_back(keyP1[j].pt);
+			block_1 = getBlock(img_1, kp1_vec[j], window_size);
+			//cout << "block_ref =\n"<< block_1<< endl;
 			
-vector<pair<int,int>> Vision::getMatches(Mat &img_1, Mat &img_2, 
+			int ssd = 0;	
+			ssd = getSSD(block_1, block_2);
+			//cout << "SSD = \t" <<ssd<< endl;
+			ssd_vec.push_back(ssd);
+		}
+		ssd_tmp_vec = ssd_vec;
+		sort(ssd_vec.begin(),ssd_vec.end());
+		
+		double ssd_ratio;
+		ssd_ratio = static_cast<double>(ssd_vec[0])/static_cast<double>(ssd_vec[1]);
+		//cout << "ssd_ratio =\t"<<ssd_ratio<< endl;
+		//cout<<setfill('-')<<setw(80)<<"-"<<endl;
+
+		if(ssd_vec[0] < ssd_th)
+		{
+			for (size_t k = 0; k < ssd_tmp_vec.size(); k++)
+			{
+				if (ssd_tmp_vec[k] == ssd_vec[0])
+				{
+					matches.push_back(make_pair(i,k));
+				}
+			}
+		}
+	}
+}
+
+/*vector<pair<int,int>> Vision::getMatches(Mat &img_1, Mat &img_2, 
 								vector<KeyPoint> &keyP1, 
 								vector<KeyPoint> &keyP2)
 {
@@ -272,26 +320,25 @@ vector<pair<int,int>> Vision::getMatches(Mat &img_1, Mat &img_2,
 		}
 	}
 	return matches;
-}
+}*/
 
 void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 {
 	if (!ref_kp.empty())
 	{
-		/*thread t[2];
-	
-		t[0] = thread(&Vision::getMatches, this, &ref_img, &img, &ref_kp, &kp);
-		t[1] = thread(&Vision::getMatches, this, &img, &ref_img, &kp, &ref_kp);
-		
-	
-		t[0].join();
-		t[1].join();*/
-		
-	
+		vector <pair<int,int>> matchedC2R, matchedR2C;
+		thread t1(&Vision::getMatches, this, ref_img, img, ref_kp, kp, matchedC2R);
+    	thread t2(&Vision::getMatches, this, img, ref_img, kp, ref_kp, matchedR2C);
 
+    	t1.join();
+    	t2.join();
+    	
+		cout 	<< "matches:\nC2R =\t"	<< matchedC2R.size()	
+				<< "\tR2C =\t"			<< matchedR2C.size()
+				<< endl;
 	
 	
-		//cout << "proceed to:\nmatching...!" << endl;
+		/*//cout << "proceed to:\nmatching...!" << endl;
 		// 1. matched c2r
 		// current is bigger loop
 		//cout << "\n\nReference \t\t<<<---\t\t Current\n" << endl;
@@ -339,7 +386,7 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 			
 			//visualizeMatches(output_image, ref_kp[parent].pt, kp[match].pt, scale);
 		}
-		//cout << "----------------------------------------------------------------" << endl;
+		//cout << "----------------------------------------------------------------" << endl;*/
 	}
 }
 
