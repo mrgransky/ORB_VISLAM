@@ -19,23 +19,39 @@ namespace ORB_VISLAM
 	class Vision
 	{
 		public:
-			Vision();
-			
-			/*FeatureMatching();
-			
-			std::vector<cv::KeyPoint> ref_kp, keyP;
-			cv::Mat ref_img;
-			
-			std::string frameWinName;
-			
-			std::vector<cv::KeyPoint> getKP(cv::Mat img);*/
-
-			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);			
-			cv::Mat Analyze(cv::Mat &image);
-			
+			Vision(const std::string &settingFilePath);
+					
+			cv::Mat IMG_;
+			cv::Mat Analyze(cv::Mat &rawImg);
+			float fps;
 			
 		private:
-			cv::Mat imgRef;
+		
+			std::vector<cv::KeyPoint> getKP(cv::Mat &rawImg);
+			cv::Mat ref_img;
+    		cv::Mat mK;
+    		cv::Mat mDistCoef;
+    		std::vector<cv::KeyPoint> ref_kp;
+    		
+    		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp);
+    		
+			int getSSD(cv::Mat block_r, cv::Mat block_c);
+			
+			
+    		std::vector <std::pair<int,int>> getMatches(cv::Mat &img_1, cv::Mat &img_2, 
+														std::vector<cv::KeyPoint> &keyP1, 
+														std::vector<cv::KeyPoint> &keyP2);
+														
+			void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
+							std::vector<cv::KeyPoint> &keyP1, 
+							std::vector<cv::KeyPoint> &keyP2,
+							std::vector<std::pair<int,int>> matches);
+														
+														
+			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point, int window_size);
+			std::vector<std::pair<int,int>> crossCheckMatching(	
+											std::vector <std::pair<int,int>> C2R,
+											std::vector <std::pair<int,int>> R2C);
 			
 	};
 }// namespace ORB_VISLAM

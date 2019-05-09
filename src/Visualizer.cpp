@@ -25,10 +25,16 @@ Visualizer::Visualizer(Mat &im, Mat TransformationMatrix, bool &frame_avl)
 	cout << "\t\t\tVISUALIZER"															<< endl;
 	cout << "#########################################################################" << endl;
 	T_ = TransformationMatrix;
-	imgRef = im;
 	hasFrame = frame_avl;
 	
-	cout << "has frame init with: \t"<< hasFrame<< endl;
+	vImg_W = im.cols;
+	vImg_H = im.rows;
+	
+	vImgScaled_W = vImg_W * scale;
+	vImgScaled_H = vImg_H * scale;
+	
+	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
+	//cout << "has frame init with: \t"<< hasFrame<< endl;
 }
 
 struct Visualizer::Triplet
@@ -79,9 +85,37 @@ void Viewer::visualizeMatches(Mat &output_image, Point2f parent, Point2f match, 
 				rand() % max + min, rand() % max + min));
 }*/
 
-void Visualizer::show(Mat &frame)
+void Visualizer::show(Mat &frame, string &frame_name, int fps)
 {
 	vImg = frame;
+	vImg_name = frame_name;
+	
+	vFPS = fps;
+	Mat vImg_tmp, vImgR_tmp;
+	
+	resize(vImg, vImg_tmp, Size(vImgScaled_W, vImgScaled_H));
+	vImg_tmp.copyTo(vImgScaled(Rect(vImgScaled_W, 0, vImgScaled_W, vImgScaled_H)));
+	
+	
+	// TODO: modification required!
+	resize(vImgR, vImgR_tmp, Size(vImgScaled_W, vImgScaled_H));
+	vImgR_tmp.copyTo(vImgScaled(Rect(0, 0, vImgScaled_W, vImgScaled_H)));
+
+	stringstream s_img, s_imgR;
+	s_img 	<< vImg_name;
+	s_imgR 	<< vImgR_name;
+			
+	cv::putText(vImgScaled, s_imgR.str(),
+				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
+	
+	cv::putText(vImgScaled, s_img.str(), 
+				cv::Point(.01*vImgScaled.cols + .5*vImgScaled.cols, .1*vImgScaled.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
+
+
+	vImgR 		= vImg;
+	vImgR_name 	= vImg_name;
 }
 
 void Visualizer::openCV_()
@@ -90,11 +124,20 @@ void Visualizer::openCV_()
 	{
 		while(hasFrame)
 		{
-			imshow(frameWinName, vImg);
-			waitKey(39);
+				
+			//imshow(frameWinName, vImg);
+			imshow(frameWinName, vImgScaled);
+			waitKey(vFPS);
+			
+			//waitKey(0);
+			
 		}
-		destroyWindow(frameWinName);
+		//destroyWindow(frameWinName);
 		cout << "while opencv ended!" << endl;
+	}
+	else
+	{
+		cout << "ref_img EMPTY!!"<< endl;
 	}
 }
 

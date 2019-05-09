@@ -9,7 +9,6 @@
 #include <stdio.h>      /* printf, fopen */
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include <thread>
-
 #include "Vision.h"
 
 using namespace std;
@@ -19,36 +18,95 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Vision::Vision()
+Vision::Vision(const string &settingFilePath)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tVISION"																<< endl;
 	cout << "#########################################################################" << endl;
+	
+	FileStorage fSettings(settingFilePath, FileStorage::READ);
+    float fx 			= fSettings["Camera.fx"];
+    float fy 			= fSettings["Camera.fy"];
+    float cx 			= fSettings["Camera.cx"];
+    float cy 			= fSettings["Camera.cy"];
+	
+	fps 				= fSettings["Camera.fps"];
+	
+	Mat K = Mat::eye(3, 3, CV_32F);
+	
+	K.at<float>(0,0) 		= fx;
+    K.at<float>(1,1) 		= fy;
+    K.at<float>(0,2) 		= cx;
+    K.at<float>(1,2) 		= cy;
+
+	K.copyTo(mK);
+	
+	Mat DistCoef(4, 1, CV_32F);
+	
+    DistCoef.at<float>(0) 	= fSettings["Camera.k1"];
+    DistCoef.at<float>(1) 	= fSettings["Camera.k2"];
+    DistCoef.at<float>(2) 	= fSettings["Camera.p1"];
+    DistCoef.at<float>(3) 	= fSettings["Camera.p2"];
+    const float k3 			= fSettings["Camera.k3"];
+
+    if(k3!=0)
+    {
+        DistCoef.resize(5);
+        DistCoef.at<float>(4) = k3;
+    }
+    DistCoef.copyTo(mDistCoef);
+    
+	cout << "\n\n" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tCAMERA PARAMETERS"													<< endl;
+	cout << "#########################################################################" << endl;
+	
+    cout << "- fx: " << fx << endl;
+    cout << "- fy: " << fy << endl;
+    cout << "- cx: " << cx << endl;
+    cout << "- cy: " << cy << endl;
+    cout << "- k1: " << DistCoef.at<float>(0) 	<< endl;
+    cout << "- k2: " << DistCoef.at<float>(1) 	<< endl;
+    if(DistCoef.rows == 5)
+        cout << "- k3: " << DistCoef.at<float>(4) << endl;
+    cout << "- p1: " << DistCoef.at<float>(2) 	<< endl;
+    cout << "- p2: " << DistCoef.at<float>(3) 	<< endl;
+	cout << "- FPS:" <<	fps						<< endl;
+	
+	IMG_ = cv::Mat::zeros(fSettings["Camera.height"], fSettings["Camera.width"], CV_8UC3);
 }
 
-Mat Vision::Analyze(Mat &image)
+Mat Vision::Analyze(Mat &rawImg)
 {
-	return image;
+	vector<KeyPoint> kp;
+	
+	kp = getKP(rawImg);
+	matching(rawImg, kp);
+	
+	ref_kp = kp;
+	ref_img = rawImg;
+	
+	
+	return rawImg;
 }
 
-/*vector<KeyPoint> Vision::getKP(Mat img)
+vector<KeyPoint> Vision::getKP(Mat &rawImg)
 {
-	cout << "\n" << endl;
+	/*cout << "\n" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tKEYPOINTS"															<< endl;
-	cout << "#########################################################################" << endl;
+	cout << "#########################################################################" << endl;*/
 
 	vector<KeyPoint> kp;
 	Ptr<FeatureDetector> 		detector 	= ORB::create();
     Ptr<DescriptorExtractor> 	extractor 	= ORB::create();
     
-	detector->detect(img, kp);
+	detector->detect(rawImg, kp);
 	return kp;
 }
 
-
-pangolin::OpenGlMatrix Vision::getCurrentCameraPose(Mat T)
+/*pangolin::OpenGlMatrix Vision::getCurrentCameraPose(Mat T)
 {
 	pangolin::OpenGlMatrix curr_cam_pose;
 	
@@ -91,9 +149,9 @@ Mat Vision::CurrentCameraPose(Mat R_abs, Mat t_abs)
 	R_abs.copyTo(T_abs.rowRange(0,3).colRange(0,3));
     cout << "T_abs =\n" << T_abs << endl;
     return T_abs;
-}
+}*/
 
-Mat getBlock(Mat img, Point2f point, int window_size)
+Mat Vision::getBlock(Mat &img, Point2f &point, int window_size)
 {
 	Mat Block = Mat::zeros(window_size, window_size, CV_32F);
 	int r = 0;
@@ -132,9 +190,36 @@ int Vision::getSSD(Mat block_r, Mat block_c)
 }
 
 
-vector<pair<int,int>> Vision::getMatches(Mat img_1, Mat img_2, 
-								vector<KeyPoint> keyP1, 
-								vector<KeyPoint> keyP2)
+vector<pair<int,int>> Vision::crossCheckMatching(vector <pair<int,int>> C2R, vector <pair<int,int>> R2C)
+{	
+	vector<pair<int,int>> CrossCheckedMatches; 
+	for (size_t i = 0;  i < min(C2R.size(), R2C.size()); i++)
+	{
+		for (size_t j = 0;  j < max(C2R.size(), R2C.size()); j++)
+		{
+			if (C2R[j].second == R2C[i].first && 
+				C2R[j].first == R2C[i].second)
+			{
+				CrossCheckedMatches.push_back(make_pair(R2C[i].first, C2R[j].first));
+			}
+		}
+	}
+	return CrossCheckedMatches;
+}
+
+
+void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
+							std::vector<cv::KeyPoint> &keyP1, 
+							std::vector<cv::KeyPoint> &keyP2,
+							std::vector<std::pair<int,int>> matches)
+{
+	// TODO:
+	
+}
+			
+vector<pair<int,int>> Vision::getMatches(Mat &img_1, Mat &img_2, 
+								vector<KeyPoint> &keyP1, 
+								vector<KeyPoint> &keyP2)
 {
 	vector<pair<int,int>> matches; 
 
@@ -189,34 +274,30 @@ vector<pair<int,int>> Vision::getMatches(Mat img_1, Mat img_2,
 	return matches;
 }
 
-vector<pair<int,int>> Vision::crossCheckMatching(vector <pair<int,int>> C2R, vector <pair<int,int>> R2C)
-{	
-	vector<pair<int,int>> CrossCheckedMatches; 
-	for (size_t i = 0;  i < min(C2R.size(), R2C.size()); i++)
-	{
-		for (size_t j = 0;  j < max(C2R.size(), R2C.size()); j++)
-		{
-			if (C2R[j].second == R2C[i].first && 
-				C2R[j].first == R2C[i].second)
-			{
-				CrossCheckedMatches.push_back(make_pair(R2C[i].first, C2R[j].first));
-			}
-		}
-	}
-	return CrossCheckedMatches;
-}
-
-void Vision::matching(Mat img, vector<KeyPoint> kp)
+void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 {
 	if (!ref_kp.empty())
 	{
-		cout << "proceed to:\nmatching...!" << endl;
+		/*thread t[2];
+	
+		t[0] = thread(&Vision::getMatches, this, &ref_img, &img, &ref_kp, &kp);
+		t[1] = thread(&Vision::getMatches, this, &img, &ref_img, &kp, &ref_kp);
+		
+	
+		t[0].join();
+		t[1].join();*/
+		
+	
+
+	
+	
+		//cout << "proceed to:\nmatching...!" << endl;
 		// 1. matched c2r
 		// current is bigger loop
-		cout << "\n\nReference \t\t<<<---\t\t Current\n" << endl;
+		//cout << "\n\nReference \t\t<<<---\t\t Current\n" << endl;
 		vector <pair<int,int>> matchedC2R;
 		matchedC2R = getMatches(ref_img, img, ref_kp, kp);
-		//cout << "matches C2R =\t"<<matchedC2R.size()<< endl;
+		cout << "matches C2R =\t"<<matchedC2R.size()<< endl;
 	
 		for (size_t k = 0; k < matchedC2R.size(); k++)
 		{
@@ -228,10 +309,10 @@ void Vision::matching(Mat img, vector<KeyPoint> kp)
 
 		// 2. matched r2c
 		// ref is bigger loop
-		cout << "\n\nReference \t\t--->>>\t\t Current\n" << endl;
+		//cout << "\n\nReference \t\t--->>>\t\t Current\n" << endl;
 		vector <pair<int,int>> matchedR2C;
 		matchedR2C = getMatches(img, ref_img, kp, ref_kp);
-		//cout << "matches R2C =\t"<<matchedR2C.size()<< endl;
+		cout << "matches R2C =\t"<<matchedR2C.size()<< endl;
 	
 		for (size_t k = 0; k < matchedR2C.size(); k++)
 		{
@@ -245,7 +326,7 @@ void Vision::matching(Mat img, vector<KeyPoint> kp)
 	
 		ccm = crossCheckMatching(matchedC2R, matchedR2C);
 	
-		cout << "ccm sz =\t" << ccm.size()<< endl;
+		cout << "Matches =\t" << ccm.size()<< endl;
 	
 		vector<Point2f> pt_ref;
 		vector<Point2f> pt_matched;
@@ -258,12 +339,8 @@ void Vision::matching(Mat img, vector<KeyPoint> kp)
 			
 			//visualizeMatches(output_image, ref_kp[parent].pt, kp[match].pt, scale);
 		}
-		cout << "----------------------------------------------------------------" << endl;
+		//cout << "----------------------------------------------------------------" << endl;
 	}
-	else
-	{
-		cout << "Matching cannot proceed!\nref_kp empty!!" << endl;
-	}
-}*/
+}
 
 }//namespace ORB_VISLAM

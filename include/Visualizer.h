@@ -26,21 +26,29 @@ namespace ORB_VISLAM
 			void visualizeKeyPoints(cv::Mat &output_image, 
 									std::vector<cv::KeyPoint> kp, 
 									float sc, std::string id_str);
+			
 			void draw_wrd_axis();
 			void run();
 			
+			cv::Mat vImg 	= cv::Mat::zeros(640, 480, CV_8UC3);
+			std::string vImg_name;
 			
-			cv::Mat vImg = cv::Mat::zeros(640, 480, CV_8UC3);
-			void show(cv::Mat &frame);
+			cv::Mat vImgR 	= cv::Mat::zeros(640, 480, CV_8UC3);
+			std::string vImgR_name = "NULL";
+			
+			cv::Mat vImgScaled = cv::Mat::zeros(640, 480, CV_8UC3);
+			
+			void show(cv::Mat &frame, std::string &frame_name, int fps);
 			
 			bool hasFrame;
 			pangolin::OpenGlMatrix currentPose(cv::Mat T);
 		private:
 			std::string frameWinName = "frames";
 			cv::Mat T_;
-			cv::Mat imgRef;
 			std::mutex visualizerMutex;
-			
+			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
+			double scale = .48;
+			int vFPS;
 			void draw_path(std::vector<Triplet> &vertices);
 			void draw_camera(pangolin::OpenGlMatrix &Tc);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);

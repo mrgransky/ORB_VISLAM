@@ -44,8 +44,10 @@ class A
 		void func1();
 		void func2(double x);
     	void run();
-    	
+    	void test();
+    	void thread_add(std::unordered_map<int, int>& ht, int from, int to);
    	private:
    		double a, b;
+   		std::mutex mtx;
 };
 

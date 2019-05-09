@@ -18,57 +18,12 @@ System::System(	const string &settingFilePath,
 	cout << "\t\t\t\tSYSTEN"															<< endl;
 	cout << "#########################################################################" << endl;
 	frame_avl = true;
-	FileStorage fSettings(settingFilePath, FileStorage::READ);
-    float fx 			= fSettings["Camera.fx"];
-    float fy 			= fSettings["Camera.fy"];
-    float cx 			= fSettings["Camera.cx"];
-    float cy 			= fSettings["Camera.cy"];
-	
-	Mat K = Mat::eye(3, 3, CV_32F);
-	
-	K.at<float>(0,0) 		= fx;
-    K.at<float>(1,1) 		= fy;
-    K.at<float>(0,2) 		= cx;
-    K.at<float>(1,2) 		= cy;
-
-	K.copyTo(mK);
-	
-	Mat DistCoef(4, 1, CV_32F);
-	
-    DistCoef.at<float>(0) 	= fSettings["Camera.k1"];
-    DistCoef.at<float>(1) 	= fSettings["Camera.k2"];
-    DistCoef.at<float>(2) 	= fSettings["Camera.p1"];
-    DistCoef.at<float>(3) 	= fSettings["Camera.p2"];
-    const float k3 			= fSettings["Camera.k3"];
-
-    if(k3!=0)
-    {
-        DistCoef.resize(5);
-        DistCoef.at<float>(4) = k3;
-    }
-    DistCoef.copyTo(mDistCoef);
-    
-	cout << "\n\n" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tCAMERA PARAMETERS"													<< endl;
-	cout << "#########################################################################" << endl;
-	
-    cout << "- fx: " << fx << endl;
-    cout << "- fy: " << fy << endl;
-    cout << "- cx: " << cx << endl;
-    cout << "- cy: " << cy << endl;
-    cout << "- k1: " << DistCoef.at<float>(0) << endl;
-    cout << "- k2: " << DistCoef.at<float>(1) << endl;
-    if(DistCoef.rows == 5)
-        cout << "- k3: " << DistCoef.at<float>(4) << endl;
-    cout << "- p1: " << DistCoef.at<float>(2) << endl;
-    cout << "- p2: " << DistCoef.at<float>(3) << endl;
 	
 	// initialize absPose class:
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
 	// init vision class:
-	visionPtr		= new Vision();
+	visionPtr		= new Vision(settingFilePath);
 	
 	// initialize visualizer class
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs, frame_avl);
@@ -82,13 +37,17 @@ System::~System()
 	visThread->join();
 }
 
-void System::run(Mat &raw_frame, double &lat, double &lng, double &alt, 
+void System::run(Mat &raw_frame, string &frame_name, double &lat, double &lng, double &alt, 
 					double &roll, double &pitch, double &heading, 
 					ofstream &file_)
 {
 	Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
 	
-	visualizerPtr->show(AnalyzedFrame);
+	int sFPS = visionPtr->fps;
+	
+	
+	// TODO: frames with keyPoints must be visualized...
+	visualizerPtr->show(AnalyzedFrame, frame_name, sFPS);
 	
 	
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
@@ -104,7 +63,9 @@ void System::saveTraj(Mat T, ofstream &file_)
 }
 void System::shutdown()
 {
-	frame_avl = false;
+	frame_avl = false; 	// if activated in main.cpp:
+						// TODO: deteriorate the while loop in visualizer class,
+						//-->>>>> (last frame invisible)
 	visualizerPtr->hasFrame = false;
 	cout << "system is shutting down!" << endl;
 }

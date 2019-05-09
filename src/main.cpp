@@ -149,8 +149,9 @@ int main( int argc, char** argv )
 	//for(int ni = 0; ni < nImages; ni++) 
 	{
 		cout 	<<"\n\nReading Frame["	<< imgName[keyIMG[ni]] << "]" << endl;
-		Mat img = imread(string(argv[1]) + "frames/" + 
-				imgName[keyIMG[ni]], CV_LOAD_IMAGE_GRAYSCALE);
+		string frame_name = imgName[keyIMG[ni]];
+		Mat img = imread(string(argv[1]) + "frames/" + imgName[keyIMG[ni]], 
+								CV_LOAD_IMAGE_GRAYSCALE);
 		
 		if(img.empty())
 		{
@@ -166,30 +167,9 @@ int main( int argc, char** argv )
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 
-		mySLAM.run(img, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
+		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], f);
 		
-		/*string img_id_str = imgName[keyIMG[ni]];
-		
-		int w = img.cols;
-		int h = img.rows;
-	
-		int w_scaled = w*scale;
-		int h_scaled = h*scale;
-	
-
-		Mat ref_img_tmp;
-    	Mat img_tmp;
-
-		Mat output_image = Mat::zeros(cv::Size(w_scaled+w_scaled, h_scaled), CV_8UC3);
-		
-		resize(img, img_tmp, Size(w_scaled, h_scaled));
-		img_tmp.copyTo(output_image(Rect(w_scaled, 0, w_scaled, h_scaled)));
-	
-		
-		
-		resize(ref_img, ref_img_tmp, Size(w_scaled, h_scaled));
-    	ref_img_tmp.copyTo(output_image(Rect(0, 0, w_scaled, h_scaled)));*/
 	}
 	clock_t tEnd = clock();
     
@@ -197,6 +177,6 @@ int main( int argc, char** argv )
     runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
     
     cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
-    mySLAM.shutdown();
+    //mySLAM.shutdown();
 	return 0;
 }

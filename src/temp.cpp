@@ -31,6 +31,38 @@ using namespace std;
 using namespace cv;
 using namespace Eigen;
 
+void A::thread_add(unordered_map<int, int>& ht, int from, int to)
+{
+    for(int i = from; i <= to; ++i)
+    {
+    	lock_guard<mutex> lck(mtx);
+        ht.insert(unordered_map<int, int>::value_type(i, 0));
+	}
+}
+
+
+void A::test()
+{
+    unordered_map<int, int> ht;
+/*    thread t[2];
+
+    t[0] = thread(&A::thread_add, this, ref(ht), 0, 9);
+    t[1] = thread(&A::thread_add, this, ref(ht), 10, 19);
+
+    t[0].join();
+    t[1].join();
+*/
+
+
+    thread t1(&A::thread_add, this, ref(ht), 0, 9);
+    thread t2(&A::thread_add, this, ref(ht), 10, 19);
+
+    t1.join();
+    t2.join();
+
+	cout << "size: " << ht.size() << endl;
+}
+
 
 
 A::A(double in_a, double in_b)
