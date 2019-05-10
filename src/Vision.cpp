@@ -91,6 +91,15 @@ Mat Vision::Analyze(Mat &rawImg)
 	return rawImg;
 }
 
+void Vision::Analyze(Mat &rawImg, vector<KeyPoint> &kp, vector<pair<int,int>> &matches)
+{
+	kp = getKP(rawImg);
+	matching(rawImg, kp, matches);
+	
+	ref_kp = kp;
+	ref_img = rawImg;
+}
+			
 vector<KeyPoint> Vision::getKP(Mat &rawImg)
 {
 	/*cout << "\n" << endl;
@@ -207,11 +216,14 @@ vector<pair<int,int>> Vision::crossCheckMatching(vector <pair<int,int>> C2R, vec
 	return CrossCheckedMatches;
 }
 
-
 void Vision::getMatches(Mat img_1, Mat img_2, 
 				vector<KeyPoint> keyP1, 
 				vector<KeyPoint> keyP2,
-				vector<pair<int,int>> matches)
+				vector<pair<int,int>> &matches)
+/*void Vision::getMatches(Mat &img_1, Mat &img_2, 
+				vector<KeyPoint> &keyP1, 
+				vector<KeyPoint> &keyP2,
+				vector<pair<int,int>> &matches)*/
 {
 	// TODO:
 	
@@ -327,8 +339,8 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 	if (!ref_kp.empty())
 	{
 		vector <pair<int,int>> matchedC2R, matchedR2C;
-		thread t1(&Vision::getMatches, this, ref_img, img, ref_kp, kp, matchedC2R);
-    	thread t2(&Vision::getMatches, this, img, ref_img, kp, ref_kp, matchedR2C);
+		thread t1(&Vision::getMatches, this, ref_img, img, ref_kp, kp, ref(matchedC2R));
+    	thread t2(&Vision::getMatches, this, img, ref_img, kp, ref_kp, ref(matchedR2C));
 
     	t1.join();
     	t2.join();
@@ -337,13 +349,14 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 				<< "\tR2C =\t"			<< matchedR2C.size()
 				<< endl;
 	
-	
 		/*//cout << "proceed to:\nmatching...!" << endl;
 		// 1. matched c2r
 		// current is bigger loop
 		//cout << "\n\nReference \t\t<<<---\t\t Current\n" << endl;
 		vector <pair<int,int>> matchedC2R;
-		matchedC2R = getMatches(ref_img, img, ref_kp, kp);
+		//matchedC2R = getMatches(ref_img, img, ref_kp, kp);
+		getMatches(ref_img, img, ref_kp, kp, matchedC2R);
+		
 		cout << "matches C2R =\t"<<matchedC2R.size()<< endl;
 	
 		for (size_t k = 0; k < matchedC2R.size(); k++)
@@ -358,14 +371,16 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 		// ref is bigger loop
 		//cout << "\n\nReference \t\t--->>>\t\t Current\n" << endl;
 		vector <pair<int,int>> matchedR2C;
-		matchedR2C = getMatches(img, ref_img, kp, ref_kp);
+		//matchedR2C = getMatches(img, ref_img, kp, ref_kp);
+		getMatches(ref_img, img, ref_kp, kp, matchedR2C);
+		
 		cout << "matches R2C =\t"<<matchedR2C.size()<< endl;
 	
 		for (size_t k = 0; k < matchedR2C.size(); k++)
 		{
 			int parent 	= matchedR2C[k].first;
 			int match 	= matchedR2C[k].second;
-		}
+		}*/
 	
 
 		// 3. cross check matching
@@ -377,7 +392,7 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 	
 		vector<Point2f> pt_ref;
 		vector<Point2f> pt_matched;
-		for (size_t i = 0; i < ccm.size(); i++)
+		/*for (size_t i = 0; i < ccm.size(); i++)
 		{
 			int parent 	= ccm[i].first;
 			int match 	= ccm[i].second;
@@ -385,9 +400,80 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp)
 			pt_matched.push_back(kp[match].pt);
 			
 			//visualizeMatches(output_image, ref_kp[parent].pt, kp[match].pt, scale);
-		}
-		//cout << "----------------------------------------------------------------" << endl;*/
+		}*/
+		//cout << "----------------------------------------------------------------" << endl;
 	}
 }
+
+void Vision::matching(Mat &img, vector<KeyPoint> &kp, vector <pair<int,int>> &matches)
+{
+	if (!ref_kp.empty())
+	{
+		vector <pair<int,int>> matchedC2R, matchedR2C;
+		thread t1(&Vision::getMatches, this, ref_img, img, ref_kp, kp, ref(matchedC2R));
+    	thread t2(&Vision::getMatches, this, img, ref_img, kp, ref_kp, ref(matchedR2C));
+
+    	t1.join();
+    	t2.join();
+    	
+		cout 	<< "matches:\nC2R =\t"	<< matchedC2R.size()	
+				<< "\tR2C =\t"			<< matchedR2C.size()
+				<< endl;
+	
+		/*//cout << "proceed to:\nmatching...!" << endl;
+		// 1. matched c2r
+		// current is bigger loop
+		//cout << "\n\nReference \t\t<<<---\t\t Current\n" << endl;
+		vector <pair<int,int>> matchedC2R;
+		//matchedC2R = getMatches(ref_img, img, ref_kp, kp);
+		getMatches(ref_img, img, ref_kp, kp, matchedC2R);
+		
+		cout << "matches C2R =\t"<<matchedC2R.size()<< endl;
+	
+		for (size_t k = 0; k < matchedC2R.size(); k++)
+		{
+			int parent 	= matchedC2R[k].first;
+			int match 	= matchedC2R[k].second;
+		}
+	
+		//	cout<<setfill('-')<<setw(80)<<"-"<<endl;
+
+		// 2. matched r2c
+		// ref is bigger loop
+		//cout << "\n\nReference \t\t--->>>\t\t Current\n" << endl;
+		vector <pair<int,int>> matchedR2C;
+		//matchedR2C = getMatches(img, ref_img, kp, ref_kp);
+		getMatches(ref_img, img, ref_kp, kp, matchedR2C);
+		
+		cout << "matches R2C =\t"<<matchedR2C.size()<< endl;
+	
+		for (size_t k = 0; k < matchedR2C.size(); k++)
+		{
+			int parent 	= matchedR2C[k].first;
+			int match 	= matchedR2C[k].second;
+		}*/
+	
+
+		// 3. cross check matching
+		matches = crossCheckMatching(matchedC2R, matchedR2C);
+		cout << "Matches (CCM) =\t" << matches.size()<< endl;
+	
+		vector<Point2f> pt_ref;
+		vector<Point2f> pt_matched;
+		/*for (size_t i = 0; i < ccm.size(); i++)
+		{
+			int parent 	= ccm[i].first;
+			int match 	= ccm[i].second;
+			pt_ref.push_back(ref_kp[parent].pt);
+			pt_matched.push_back(kp[match].pt);
+			
+			//visualizeMatches(output_image, ref_kp[parent].pt, kp[match].pt, scale);
+		}*/
+		//cout << "----------------------------------------------------------------" << endl;
+	}
+}
+
+
+
 
 }//namespace ORB_VISLAM

@@ -23,6 +23,12 @@ namespace ORB_VISLAM
 					
 			cv::Mat IMG_;
 			cv::Mat Analyze(cv::Mat &rawImg);
+			
+			void Analyze(cv::Mat &rawImg, 
+							std::vector<cv::KeyPoint> &kp, 
+							std::vector<std::pair<int,int>> &matches);
+			
+			
 			float fps;
 			
 		private:
@@ -34,18 +40,25 @@ namespace ORB_VISLAM
     		std::vector<cv::KeyPoint> ref_kp;
     		
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp);
+    		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp,
+    									std::vector<std::pair<int,int>> &matches);
     		
+
 			int getSSD(cv::Mat &block_r, cv::Mat &block_c);
 			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point, int window_size);
 			
     		/*std::vector <std::pair<int,int>> getMatches(cv::Mat &img_1, cv::Mat &img_2, 
 														std::vector<cv::KeyPoint> &keyP1, 
 														std::vector<cv::KeyPoint> &keyP2);*/
-														
 			void getMatches(cv::Mat img_1, cv::Mat img_2, 
 							std::vector<cv::KeyPoint> keyP1, 
 							std::vector<cv::KeyPoint> keyP2,
-							std::vector<std::pair<int,int>> matches);
+							std::vector<std::pair<int,int>> &matches);
+														
+			/*void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
+							std::vector<cv::KeyPoint> &keyP1, 
+							std::vector<cv::KeyPoint> &keyP2,
+							std::vector<std::pair<int,int>> &matches);*/
 														
 														
 			std::vector<std::pair<int,int>> crossCheckMatching(	

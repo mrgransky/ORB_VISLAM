@@ -40,14 +40,26 @@ System::~System()
 void System::run(Mat &raw_frame, string &frame_name, double &lat, double &lng, double &alt, 
 					double &roll, double &pitch, double &heading, 
 					ofstream &file_)
-{
-	Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
-	
+{	
 	int sFPS = visionPtr->fps;
+	/*Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
+	visualizerPtr->show(AnalyzedFrame, frame_name, sFPS);*/
+	
+
+	vector<pair<int,int>> matches;
+	vector<KeyPoint> KP;
+	
+	visionPtr->Analyze(raw_frame, KP, matches);
+	visualizerPtr->show(raw_frame, KP, matches, frame_name, sFPS);
 	
 	
-	// TODO: frames with keyPoints must be visualized...
-	visualizerPtr->show(AnalyzedFrame, frame_name, sFPS);
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);

@@ -43,47 +43,89 @@ struct Visualizer::Triplet
 };
 
 
-/*void Viewer::visualizeKeyPoints(Mat &output_image, vector<KeyPoint> kp, float sc, string id_str)
-{	
-	if (!ref_kp.empty())
+void Visualizer::draw_KP(Mat &scaled_win, vector<KeyPoint> &kp)
+{
+	if (!vKP_ref.empty())
 	{
-		frameWinName = "Frames";
-		namedWindow(frameWinName);
-		for (size_t i = 0; i < ref_kp.size(); i++)
+		for (size_t i = 0; i < vKP_ref.size(); i++)
 		{
-			Point2f pt_ref(sc*ref_kp[i].pt.x, sc*ref_kp[i].pt.y);
-			cv::circle(output_image, pt_ref, 1, Scalar(1,240,180), FILLED);
+			Point2f pt_ref(scale*vKP_ref[i].pt.x, scale*vKP_ref[i].pt.y);
+			cv::circle(scaled_win, pt_ref, 1, Scalar(1,240,180), FILLED);
 		}
+	} else
+	{
+		cout << "ref_kp NOT available!!" << endl;
+	}
 	
-		for (size_t i = 0; i < kp.size(); i++)
-		{
-			Point2f pt_curr(.5*output_image.cols + sc*kp[i].pt.x, sc*kp[i].pt.y);
-			cv::circle(output_image, pt_curr, 1, Scalar(199,199,20), FILLED);
-		}
-		
-		imshow(frameWinName, output_image);
-		waitKey(2000);
-		destroyWindow(frameWinName);
-	}else
+	for (size_t i = 0; i < kp.size(); i++)
 	{
-		cout << "Keypoints Visualization cannot proceed!\nref_kp empty!!" << endl;
+		Point2f pt_curr(.5*scaled_win.cols + scale*kp[i].pt.x, scale*kp[i].pt.y);
+		cv::circle(scaled_win, pt_curr, 1, Scalar(199,199,20), FILLED);
 	}
 }
 
-void Viewer::visualizeMatches(Mat &output_image, Point2f parent, Point2f match, float sc)
+void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp, 
+								vector<pair<int,int>> &matches)
 {
 	int min = 0;
 	int max = 255;
+	if (!vKP_ref.empty())
+	{
+		for (size_t i = 0; i < matches.size(); i++)
+		{
+			int parent 	= matches[i].first;
+			int match 	= matches[i].second;
+		
+			Point2f pt_1 = scale * vKP_ref[parent].pt;
+			cv::circle(scaled_win, pt_1, 3, Scalar(1,111,197), LINE_4);
 	
-	Point2f pt_1 = sc * parent;
-	cv::circle(output_image, pt_1, 3, Scalar(1,111,197), LINE_4);
+			Point2f pt_2(.5*scaled_win.cols + scale * kp[match].pt.x, scale * kp[match].pt.y);
+			cv::circle(scaled_win, pt_2, 3, Scalar(1,111,197), LINE_4);
 	
-	Point2f pt_2(.5*output_image.cols + sc*match.x, sc*match.y);	
-	cv::circle(output_image, pt_2,3, Scalar(1,111,197), LINE_4);
+			cv::line(scaled_win, pt_1, pt_2, Scalar(rand() % max + min, 
+						rand() % max + min, rand() % max + min));
+		}
+	}
+}
+
+void Visualizer::show(Mat &frame, 
+			vector<KeyPoint> &kp, 
+			vector<pair<int,int>> &matches,
+			string &frame_name, int fps)
+{
+	vImg 		= frame;
+	vImg_name 	= frame_name;
+	vFPS 		= fps;
 	
-	cv::line(output_image, pt_1, pt_2, Scalar(rand() % max + min, 
-				rand() % max + min, rand() % max + min));
-}*/
+	Mat vImg_tmp, vImgR_tmp;
+	
+	resize(vImg, vImg_tmp, Size(vImgScaled_W, vImgScaled_H));
+	vImg_tmp.copyTo(vImgScaled(Rect(vImgScaled_W, 0, vImgScaled_W, vImgScaled_H)));
+	
+	resize(vImgR, vImgR_tmp, Size(vImgScaled_W, vImgScaled_H));
+	vImgR_tmp.copyTo(vImgScaled(Rect(0, 0, vImgScaled_W, vImgScaled_H)));
+
+	stringstream s_img, s_imgR;
+	s_img 	<< vImg_name;
+	s_imgR 	<< vImgR_name;
+	
+	draw_KP(vImgScaled, kp);
+	draw_matches(vImgScaled, kp, matches);
+	
+	cv::putText(vImgScaled, s_imgR.str(),
+				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
+	
+	cv::putText(vImgScaled, s_img.str(), 
+				cv::Point(.01*vImgScaled.cols + .5*vImgScaled.cols, .1*vImgScaled.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
+
+
+	vImgR 		= vImg;
+	vImgR_name 	= vImg_name;
+	vKP_ref		= kp;
+	
+}
 
 void Visualizer::show(Mat &frame, string &frame_name, int fps)
 {
@@ -421,17 +463,4 @@ void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
     glFlush();
     glPopMatrix();
 }
-
-/*Mat Visualizer::visualizeFrames(Mat &frame)
-{
-	Mat out;
-	resize(frame, f, Size(w_scaled, h_scaled));
-	f.copyTo(out(Rect(w_scaled, 0, w_scaled, h_scaled)));
-	
-		
-		
-	resize(ref, ref_img_tmp, Size(w_scaled, h_scaled));
-    ref_img_tmp.copyTo(out(Rect(0, 0, w_scaled, h_scaled)));
-}*/
-
 }
