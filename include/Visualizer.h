@@ -18,15 +18,9 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(cv::Mat &im, cv::Mat TransformationMatrix, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_GT, cv::Mat T_cam, bool &frame_avl);
 			
 			struct Triplet;
-			/*void visualizeMatches(cv::Mat &output_image, cv::Point2f parent, 
-									cv::Point2f match, float sc);
-			void visualizeKeyPoints(cv::Mat &output_image, 
-									std::vector<cv::KeyPoint> kp, 
-									float sc, std::string id_str);
-			*/
 			void draw_wrd_axis();
 			void run();
 			
@@ -35,12 +29,12 @@ namespace ORB_VISLAM
 			
 			cv::Mat vImgR 	= cv::Mat::zeros(640, 480, CV_8UC3);
 			std::string vImgR_name = "NULL";
-			std::vector<cv::KeyPoint> vKP_ref;
+			
 			
 			cv::Mat vImgScaled = cv::Mat::zeros(640, 480, CV_8UC3);
 			
-			void show(cv::Mat &frame, std::string &frame_name, int fps);
-			
+			//void show(cv::Mat &frame, std::string &frame_name, int fps);
+			std::vector<cv::KeyPoint> vKP_ref;
 			
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
@@ -48,16 +42,19 @@ namespace ORB_VISLAM
 						std::string &frame_name, int fps);
 			
 			bool hasFrame;
-			pangolin::OpenGlMatrix currentPose(cv::Mat T);
+			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
 			std::string frameWinName = "frames";
-			cv::Mat T_;
+			
+			cv::Mat vTgt, vTcam;
+			
+			
 			std::mutex visualizerMutex;
 			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
 			double scale = .48;
 			int vFPS;
-			void draw_path(std::vector<Triplet> &vertices);
-			void draw_camera(pangolin::OpenGlMatrix &Tc);
+			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
+			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
 
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);

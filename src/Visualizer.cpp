@@ -18,13 +18,16 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat &im, Mat TransformationMatrix, bool &frame_avl)
+Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, bool &frame_avl)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tVISUALIZER"															<< endl;
 	cout << "#########################################################################" << endl;
-	T_ = TransformationMatrix;
+	
+	vTgt 	= T_GT;
+	vTcam 	= T_cam;
+	
 	hasFrame = frame_avl;
 	
 	vImg_W = im.cols;
@@ -127,7 +130,7 @@ void Visualizer::show(Mat &frame,
 	
 }
 
-void Visualizer::show(Mat &frame, string &frame_name, int fps)
+/*void Visualizer::show(Mat &frame, string &frame_name, int fps)
 {
 	vImg = frame;
 	vImg_name = frame_name;
@@ -158,7 +161,7 @@ void Visualizer::show(Mat &frame, string &frame_name, int fps)
 
 	vImgR 		= vImg;
 	vImgR_name 	= vImg_name;
-}
+}*/
 
 void Visualizer::openCV_()
 {
@@ -207,11 +210,18 @@ void Visualizer::openGL_()
             .SetHandler(&handler);
 
 
-	// Camera in World Coordinate:
-    pangolin::OpenGlMatrix cw;
-    cw.SetIdentity();
+	// GNSS/INS in World Coordinate:
+    pangolin::OpenGlMatrix pT_gt;
+	pT_gt.SetIdentity();
 	
-	vector<Triplet> vertices;
+	// camera in World Coordinate:
+	pangolin::OpenGlMatrix pTc;
+	pTc.SetIdentity();
+	
+	
+	vector<Triplet> vertices_gt;
+	vector<Triplet> vertices_cam;
+	
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	int counter_KF = 0;
@@ -224,26 +234,41 @@ void Visualizer::openGL_()
 		glClearColor(1,1,1,1);
 		
 
-		Triplet cur_pt;
+		Triplet current_gt_pt;
+		Triplet current_cam_pt;
+		
 		draw_wrd_axis();
 
-		cw = currentPose(T_);
+		pT_gt 	= getCurrentPose(vTgt);
+		pTc 	= getCurrentPose(vTcam);
 		
 		if (counter_KF%50 == 0)
 		{
-			KeyFrames.push_back(cw);
+			KeyFrames.push_back(pT_gt);
 		}
-		draw_camera(cw);
+		draw(pT_gt,.1,.1,.1);
 		draw_KF(KeyFrames);	
-			
-		//s_cam.Follow(cw);
-		cur_pt.x = T_.at<float>(0,3);
-		cur_pt.y = T_.at<float>(1,3);
-		cur_pt.z = T_.at<float>(2,3);
+		draw(pTc,.8,0,0);
 		
-		vertices.push_back(cur_pt);
-		draw_path(vertices);
+		//s_cam.Follow(T_gt);
+		// GNSS/INS:
+		current_gt_pt.x = vTgt.at<float>(0,3);
+		current_gt_pt.y = vTgt.at<float>(1,3);
+		current_gt_pt.z = vTgt.at<float>(2,3);
+		
+		// camera:
+		current_cam_pt.x = vTcam.at<float>(0,3);
+		current_cam_pt.y = vTcam.at<float>(1,3);
+		current_cam_pt.z = vTcam.at<float>(2,3);
+		
+		
+		
+		vertices_gt.push_back(current_gt_pt);
+		vertices_cam.push_back(current_cam_pt);
+		
+		draw_path(vertices_gt, .84, .83, .1);
 		counter_KF++;
+		draw_path(vertices_cam, .2,.8,.8);
 		pangolin::FinishFrame();
 	}
 }
@@ -257,35 +282,35 @@ void Visualizer::run()
 	t2.join();
 }
 
-pangolin::OpenGlMatrix Visualizer::currentPose(Mat T)
+pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)
 {
 	pangolin::OpenGlMatrix curPose;
 	
-	Mat Rc(3,3,CV_32F);
-	Mat tc(3,1,CV_32F);
+	Mat R(3,3,CV_32F);
+	Mat t(3,1,CV_32F);
 	
-	Rc = T.rowRange(0,3).colRange(0,3);
-	tc = T.rowRange(0,3).col(3);
+	R = T.rowRange(0,3).colRange(0,3);
+	t = T.rowRange(0,3).col(3);
 	
 		
-	curPose.m[0]  = Rc.at<float>(0,0);
-	curPose.m[1]  = Rc.at<float>(1,0);
-	curPose.m[2]  = Rc.at<float>(2,0);
+	curPose.m[0]  = R.at<float>(0,0);
+	curPose.m[1]  = R.at<float>(1,0);
+	curPose.m[2]  = R.at<float>(2,0);
 	curPose.m[3]  = 0.0;
 	
-	curPose.m[4]  = Rc.at<float>(0,1);
-	curPose.m[5]  = Rc.at<float>(1,1);
-	curPose.m[6]  = Rc.at<float>(2,1);
+	curPose.m[4]  = R.at<float>(0,1);
+	curPose.m[5]  = R.at<float>(1,1);
+	curPose.m[6]  = R.at<float>(2,1);
 	curPose.m[7]  = 0.0;
 
-	curPose.m[8]  = Rc.at<float>(0,2);
-	curPose.m[9]  = Rc.at<float>(1,2);
-	curPose.m[10] = Rc.at<float>(2,2);
+	curPose.m[8]  = R.at<float>(0,2);
+	curPose.m[9]  = R.at<float>(1,2);
+	curPose.m[10] = R.at<float>(2,2);
 	curPose.m[11] = 0.0;
 
-	curPose.m[12] = tc.at<float>(0);
-	curPose.m[13] = tc.at<float>(1);
-	curPose.m[14] = tc.at<float>(2);
+	curPose.m[12] = t.at<float>(0);
+	curPose.m[13] = t.at<float>(1);
+	curPose.m[14] = t.at<float>(2);
 	curPose.m[15] = 1.0;
 	
 	return curPose;
@@ -331,10 +356,10 @@ void Visualizer::draw_wrd_axis()
 	glFlush();
 }
 
-void Visualizer::draw_path(vector<Triplet> &vertices)
+void Visualizer::draw_path(vector<Triplet> &vertices, float r, float g, float b)
 {
 	glLineWidth(.9);
-	glColor4f(.84, .83, .1,1);
+	glColor4f(r,g,b, 1);
 	glBegin(GL_LINES);
 	
 	for (size_t i = 1; i < vertices.size(); i++)
@@ -380,7 +405,7 @@ void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
     	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]+.07);
 		
 		
-		glColor3f(.1,.91,.95);
+		glColor3f(.93, .44, .9);
 		glVertex3f(KeyFrames[i].m[12], 		KeyFrames[i].m[13], 		KeyFrames[i].m[14]);	
 		glVertex3f(w+KeyFrames[i].m[12],	h+KeyFrames[i].m[13],		z+KeyFrames[i].m[14]);
 		
@@ -412,14 +437,14 @@ void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
 }
 
 
-void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
+void Visualizer::draw(pangolin::OpenGlMatrix &T, float r, float g, float b)
 {
 	glPushMatrix();
 
 #ifdef HAVE_GLES
-        glMultMatrixf(Tc.m);
+		glMultMatrixf(T.m);
 #else
-        glMultMatrixd(Tc.m);
+		glMultMatrixd(T.m);
 #endif
 
     const float w = .02;
@@ -427,7 +452,8 @@ void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
     const float z = w*0.5;
 
 	glLineWidth(.8);
-	glColor3f(.1,.1,.1);
+	glColor3f(r,g,b);
+	
 	glBegin(GL_LINES);
 
     glVertex3f(0,0,0);
@@ -454,7 +480,7 @@ void Visualizer::draw_camera(pangolin::OpenGlMatrix &Tc)
 	glVertex3f(-w,-h,z);
 	glVertex3f(w,-h,z);
 
-	// camera axis
+	// axis
     glColor3f (1,0,0);  		glVertex3f (0,0,0);  	glVertex3f (.07,0,0);    // X  red.
     glColor3f (0,1,0);  		glVertex3f (0,0,0);  	glVertex3f (0,.07,0);    // Y green.
     glColor3f (0,0,1);  		glVertex3f (0,0,0);  	glVertex3f (0,0,.07);    // z  blue.

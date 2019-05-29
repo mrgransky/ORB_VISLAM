@@ -26,7 +26,8 @@ System::System(	const string &settingFilePath,
 	visionPtr		= new Vision(settingFilePath);
 	
 	// initialize visualizer class
-	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs, frame_avl);
+	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs, 
+										visionPtr->T_cam, frame_avl);
 	
 	// run visualizer thread
 	visThread 		= new thread(&Visualizer::run, visualizerPtr);
@@ -39,7 +40,7 @@ System::~System()
 
 void System::run(Mat &raw_frame, string &frame_name, double &lat, double &lng, double &alt, 
 					double &roll, double &pitch, double &heading, 
-					ofstream &file_)
+					ofstream &file_GT, ofstream &file_cam)
 {	
 	int sFPS = visionPtr->fps;
 	/*Mat AnalyzedFrame = visionPtr->Analyze(raw_frame);
@@ -52,19 +53,9 @@ void System::run(Mat &raw_frame, string &frame_name, double &lat, double &lng, d
 	visionPtr->Analyze(raw_frame, KP, matches);
 	visualizerPtr->show(raw_frame, KP, matches, frame_name, sFPS);
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
-	saveTraj(absPosePtr->T_abs, file_);
-	
+	saveTraj(absPosePtr->T_abs, file_GT);
+	saveTraj(visionPtr->T_cam, file_cam);
 }
 
 void System::saveTraj(Mat T, ofstream &file_)

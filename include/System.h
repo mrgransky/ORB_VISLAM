@@ -20,7 +20,6 @@
 #include "Visualizer.h"
 #include "Vision.h"
 
-
 namespace ORB_VISLAM
 {
 	class System
@@ -33,7 +32,7 @@ namespace ORB_VISLAM
 			void run(cv::Mat &frame, std::string &frame_name, 
 						double &lat, double &lng, double &alt, 
 						double &roll, double &pitch, double &heading, 
-						std::ofstream &file_);
+						std::ofstream &file_GT, std::ofstream &file_cam);
 		
 			void shutdown();
 		private:

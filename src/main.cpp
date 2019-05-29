@@ -138,11 +138,18 @@ int main( int argc, char** argv )
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
 	
-	string traj = string(argv[1])+"frames/traj.txt";
-	ofstream f;
-	f.open(traj.c_str());
-	f << fixed;
-	f << "x,y,z"<< endl;
+	string traj_GT = string(argv[1])+"frames/GNSS_INS_Trajectory.txt";
+	string traj_cam = string(argv[1])+"frames/VO_Trajectory.txt";
+	
+	ofstream f_GT, f_cam;
+	f_GT.open(traj_GT.c_str());
+	f_cam.open(traj_cam.c_str());
+	
+	f_GT << fixed;
+	f_GT << "x,y,z"<< endl;
+
+	f_cam << fixed;
+	f_cam << "x,y,z"<< endl;
 
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
@@ -168,7 +175,8 @@ int main( int argc, char** argv )
 		}
 
 		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
-					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], f);
+					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
+					f_GT, f_cam);
 		
 	}
 	clock_t tEnd = clock();

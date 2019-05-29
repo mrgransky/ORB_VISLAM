@@ -1,5 +1,5 @@
-#ifndef FEATUREMATCHING_H
-#define FEATUREMATCHING_H
+#ifndef VISION_H
+#define VISION_H
 
 #include <iostream>
 #include <opencv2/core.hpp>
@@ -13,24 +13,22 @@
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include <thread>
 
-
 namespace ORB_VISLAM
 {
 	class Vision
 	{
-		public:
+		public:			
+			float fps;
+			float focal;
+			cv::Point2f pp;
+			double scale = 1.0;
+			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);
+
 			Vision(const std::string &settingFilePath);
-					
 			cv::Mat IMG_;
-			cv::Mat Analyze(cv::Mat &rawImg);
-			
 			void Analyze(cv::Mat &rawImg, 
 							std::vector<cv::KeyPoint> &kp, 
-							std::vector<std::pair<int,int>> &matches);
-			
-			
-			float fps;
-			
+							std::vector<std::pair<int,int>> &matches);			
 		private:
 		
 			std::vector<cv::KeyPoint> getKP(cv::Mat &rawImg);
@@ -38,35 +36,45 @@ namespace ORB_VISLAM
     		cv::Mat mK;
     		cv::Mat mDistCoef;
     		std::vector<cv::KeyPoint> ref_kp;
-    		
-    		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp);
+    		cv::Mat R_f, t_f;
+			int window_size 	= 11;
+			float ssd_th 		= 10.0f;
+			float ssd_ratio_th 	= 0.8f;
+			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp,
     									std::vector<std::pair<int,int>> &matches);
     		
-
-			int getSSD(cv::Mat &block_r, cv::Mat &block_c);
-			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point, int window_size);
 			
-    		/*std::vector <std::pair<int,int>> getMatches(cv::Mat &img_1, cv::Mat &img_2, 
-														std::vector<cv::KeyPoint> &keyP1, 
-														std::vector<cv::KeyPoint> &keyP2);*/
+			float getSSD(cv::Mat &block_1, cv::Mat &block_2);
+			
+			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point);
+			
+    		/*
+			int getSSD(cv::Mat &block_r, cv::Mat &block_c);
+			
 			void getMatches(cv::Mat img_1, cv::Mat img_2, 
 							std::vector<cv::KeyPoint> keyP1, 
 							std::vector<cv::KeyPoint> keyP2,
 							std::vector<std::pair<int,int>> &matches);
-														
-			/*void getMatches(cv::Mat &img_1, cv::Mat &img_2, 
-							std::vector<cv::KeyPoint> &keyP1, 
-							std::vector<cv::KeyPoint> &keyP2,
-							std::vector<std::pair<int,int>> &matches);*/
-														
-														
+							
 			std::vector<std::pair<int,int>> crossCheckMatching(	
 											std::vector <std::pair<int,int>> C2R,
-											std::vector <std::pair<int,int>> R2C);
+											std::vector <std::pair<int,int>> R2C);*/
+							
+			void getMatches(cv::Mat img_1, std::vector<cv::KeyPoint> keyP1, 
+							cv::Mat img_2, std::vector<cv::KeyPoint> keyP2,	
+							std::vector<std::pair<int,int>> &matches);
+						
+											
+			std::vector<std::pair<int,int>> crossCheckMatching(	
+											std::vector <std::pair<int,int>> &m_12,
+											std::vector <std::pair<int,int>> &m_21);
+											
+											
+			cv::Mat getHomography(	const std::vector<cv::Point2f> &p_ref, 
+									const std::vector<cv::Point2f> &p_mtch);
 			
+			void decomposeHomography(cv::Mat homography);
 	};
 }// namespace ORB_VISLAM
-
-
-#endif // FEATUREMATCHING_H
+#endif // VISION_H

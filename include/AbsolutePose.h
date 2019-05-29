@@ -27,7 +27,6 @@ namespace ORB_VISLAM
 					
 			void calcPose( 	double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading);
-			void setCurrentPose(cv::Mat &R_abs, cv::Mat &t_abs);
 			
 			
 			const int earth_rad = 6378137;
@@ -37,6 +36,7 @@ namespace ORB_VISLAM
 			cv::Mat T_abs = cv::Mat::eye(4, 4, CV_32F);
 		private:
 			double latRef, lngRef, altRef;
+			void setCurrentPose(cv::Mat &R_abs, cv::Mat &t_abs);
 	};
 }// namespace ORB_VISLAM
 

@@ -50,10 +50,7 @@ void AbsolutePose::setCurrentPose(Mat &R_abs, Mat &t_abs)
 	center.copyTo(T_abs.rowRange(0,3).col(3));
 	R_abs.copyTo(T_abs.rowRange(0,3).colRange(0,3));
 	
-	
-	
-	
-	cout << "T_abs =\n" << T_abs<< endl;
+	cout << "\n\nT_abs =\n" << T_abs<< endl;
 }
 
 Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
