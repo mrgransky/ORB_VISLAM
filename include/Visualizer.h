@@ -19,6 +19,7 @@ namespace ORB_VISLAM
 	{
 		public:
 			Visualizer(cv::Mat &im, cv::Mat T_GT, cv::Mat T_cam, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_cam, bool &frame_avl);
 			
 			struct Triplet;
 			void draw_wrd_axis();
@@ -51,7 +52,7 @@ namespace ORB_VISLAM
 			
 			std::mutex visualizerMutex;
 			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
-			double scale = .48;
+			float scale = 0.48f;
 			int vFPS;
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);

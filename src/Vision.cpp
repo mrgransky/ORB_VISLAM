@@ -23,7 +23,7 @@ Vision::Vision(const string &settingFilePath)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISION"																<< endl;
+	cout << "\t\t\t\tVISION"															<< endl;
 	cout << "#########################################################################" << endl;
 	
 	FileStorage fSettings(settingFilePath, FileStorage::READ);
@@ -35,7 +35,7 @@ Vision::Vision(const string &settingFilePath)
 	focal = fx;
 	pp = Point2f(cx,cy);
 	fps 				= fSettings["Camera.fps"];
-	
+
 	Mat K = Mat::eye(3, 3, CV_32F);
 	
 	K.at<float>(0,0) 		= fx;
@@ -60,10 +60,10 @@ Vision::Vision(const string &settingFilePath)
     }
     DistCoef.copyTo(mDistCoef);
     
-	cout << "\n\n" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tCAMERA PARAMETERS"													<< endl;
-	cout << "#########################################################################" << endl;
+	cout << "\n" << endl;
+	cout << "---------------------" << endl;
+	cout << "CAMERA PARAMETERS"		<< endl;
+	cout << "---------------------" << endl;
 	
     cout << "- fx: " << fx << endl;
     cout << "- fy: " << fy << endl;
@@ -78,6 +78,9 @@ Vision::Vision(const string &settingFilePath)
 	cout << "- FPS:" <<	fps						<< endl;
 	
 	IMG_ = cv::Mat::zeros(fSettings["Camera.height"], fSettings["Camera.width"], CV_8UC3);
+	
+	cout << "ch IMG_ = \t" << IMG_.channels() << endl;
+	
 	R_f = cv::Mat::eye(3, 3, CV_64F);
 	t_f = cv::Mat::zeros(3, 1, CV_64F);
 }
@@ -253,11 +256,11 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, vector <pair<int,int>> &ma
 
 			//cout << "\nEssential Matrix = \n"<< E << endl;
 					
-			if((scale > 0.1) 	&& (t.at<double>(2) > t.at<double>(0)) 
+			if((sc > 0.1) 	&& (t.at<double>(2) > t.at<double>(0)) 
 								&& (t.at<double>(2) > t.at<double>(1))) 
 			{
 				R_f = R * R_f;
-				t_f = t_f + scale*(R_f*t);
+				t_f = t_f + sc*(R_f*t);
 			}
 			else 
 			{

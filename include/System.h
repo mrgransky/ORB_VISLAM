@@ -25,14 +25,20 @@ namespace ORB_VISLAM
 	class System
 	{
 		public:
+			System( const std::string &settingFilePath);
+			
 			System( const std::string &settingFilePath, 
 					double &ref_lat, double &ref_lng, double &ref_alt);
 			~System();
+			
+			void run(cv::Mat &frame, std::string &frame_name, std::ofstream &file_cam);
 			
 			void run(cv::Mat &frame, std::string &frame_name, 
 						double &lat, double &lng, double &alt, 
 						double &roll, double &pitch, double &heading, 
 						std::ofstream &file_GT, std::ofstream &file_cam);
+		
+		
 		
 			void shutdown();
 		private:

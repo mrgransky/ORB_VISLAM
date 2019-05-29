@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-project(vi_slam)
+project(vo)
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)
@@ -55,19 +55,22 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-add_executable(${PROJECT_NAME}_temp 
-				src/mainTemp.cpp
-				src/temp.cpp
+add_executable(${PROJECT_NAME}_kitti 
+				src/run_kitti.cpp
+				src/System.cpp
+				src/AbsolutePose.cpp
+				src/Vision.cpp
+				src/Visualizer.cpp
 				)
-target_link_libraries(${PROJECT_NAME}_temp ${LIBS})
+target_link_libraries(${PROJECT_NAME}_kitti ${LIBS})
 
 
 
-add_executable(${PROJECT_NAME}_absPose 
+add_executable(${PROJECT_NAME}_civit 
 				src/main.cpp
 				src/System.cpp
 				src/AbsolutePose.cpp
 				src/Vision.cpp
 				src/Visualizer.cpp
 				)
-target_link_libraries(${PROJECT_NAME}_absPose ${LIBS})
+target_link_libraries(${PROJECT_NAME}_civit ${LIBS})

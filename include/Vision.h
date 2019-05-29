@@ -17,18 +17,19 @@ namespace ORB_VISLAM
 {
 	class Vision
 	{
-		public:			
+		public:	
+			Vision(const std::string &settingFilePath);
+			
+			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);
+			
+			void Analyze(cv::Mat &rawImg, 
+							std::vector<cv::KeyPoint> &kp, 
+							std::vector<std::pair<int,int>> &matches);	
 			float fps;
 			float focal;
 			cv::Point2f pp;
-			double scale = 1.0;
-			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);
-
-			Vision(const std::string &settingFilePath);
-			cv::Mat IMG_;
-			void Analyze(cv::Mat &rawImg, 
-							std::vector<cv::KeyPoint> &kp, 
-							std::vector<std::pair<int,int>> &matches);			
+			float sc = 1.0f;
+			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);		
 		private:
 		
 			std::vector<cv::KeyPoint> getKP(cv::Mat &rawImg);

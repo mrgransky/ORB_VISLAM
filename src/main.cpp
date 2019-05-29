@@ -159,7 +159,6 @@ int main( int argc, char** argv )
 		string frame_name = imgName[keyIMG[ni]];
 		Mat img = imread(string(argv[1]) + "frames/" + imgName[keyIMG[ni]], 
 								CV_LOAD_IMAGE_GRAYSCALE);
-		
 		if(img.empty())
 		{
 			cerr	<<"\nFailed loading frame["
@@ -171,12 +170,20 @@ int main( int argc, char** argv )
 		
 		if(img.channels() < 3) //this should be always true
 		{
+			cout << "ch B4 = \t" << img.channels() 
+			<< " , depth B4 = \t" << img.depth()
+			<< " , type B4 = \t" << img.type() 
+			<< endl;
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-
-		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
+		cout << "ch after = \t" << img.channels() 
+		<< " , depth after = \t" << img.depth()
+		<< " , type after = \t" << img.type() 
+		<< endl;
+		
+		/*mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
-					f_GT, f_cam);
+					f_GT, f_cam);*/
 		
 	}
 	clock_t tEnd = clock();

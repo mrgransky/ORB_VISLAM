@@ -18,6 +18,32 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
+Visualizer::Visualizer(Mat &im, Mat T_cam, bool &frame_avl)
+{
+	cout << "\n\n" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tVISUALIZER"															<< endl;
+	cout << "#########################################################################" << endl;
+	
+	vTcam 	= T_cam;
+	
+	hasFrame = frame_avl;
+	
+	vImg_W = im.cols;
+	vImg_H = im.rows;
+	
+	vImgScaled_W = vImg_W * scale;
+	vImgScaled_H = vImg_H * scale;
+	
+	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
+	
+	
+	cout << "ch vImgScaled = \t" << vImgScaled.channels() << endl;
+	
+	//cout << "has frame init with: \t"<< hasFrame<< endl;
+}
+
+
 Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, bool &frame_avl)
 {
 	cout << "\n\n" << endl;
@@ -35,7 +61,7 @@ Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, bool &frame_avl)
 	
 	vImgScaled_W = vImg_W * scale;
 	vImgScaled_H = vImg_H * scale;
-	
+			
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
 	//cout << "has frame init with: \t"<< hasFrame<< endl;
 }
@@ -130,52 +156,17 @@ void Visualizer::show(Mat &frame,
 	
 }
 
-/*void Visualizer::show(Mat &frame, string &frame_name, int fps)
-{
-	vImg = frame;
-	vImg_name = frame_name;
-	
-	vFPS = fps;
-	Mat vImg_tmp, vImgR_tmp;
-	
-	resize(vImg, vImg_tmp, Size(vImgScaled_W, vImgScaled_H));
-	vImg_tmp.copyTo(vImgScaled(Rect(vImgScaled_W, 0, vImgScaled_W, vImgScaled_H)));
-	
-	
-	// TODO: modification required!
-	resize(vImgR, vImgR_tmp, Size(vImgScaled_W, vImgScaled_H));
-	vImgR_tmp.copyTo(vImgScaled(Rect(0, 0, vImgScaled_W, vImgScaled_H)));
-
-	stringstream s_img, s_imgR;
-	s_img 	<< vImg_name;
-	s_imgR 	<< vImgR_name;
-			
-	cv::putText(vImgScaled, s_imgR.str(),
-				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
-    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
-	
-	cv::putText(vImgScaled, s_img.str(), 
-				cv::Point(.01*vImgScaled.cols + .5*vImgScaled.cols, .1*vImgScaled.rows),
-    			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
-
-
-	vImgR 		= vImg;
-	vImgR_name 	= vImg_name;
-}*/
-
 void Visualizer::openCV_()
 {
 	if(!vImg.empty())
-	{
+	{	
 		while(hasFrame)
 		{
-				
 			//imshow(frameWinName, vImg);
 			imshow(frameWinName, vImgScaled);
 			waitKey(vFPS);
 			
 			//waitKey(0);
-			
 		}
 		//destroyWindow(frameWinName);
 		cout << "while opencv ended!" << endl;
