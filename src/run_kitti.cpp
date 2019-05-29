@@ -49,7 +49,7 @@ void printHelp(char ** argv)
 			<< " [/path/2/image_folder] [/path/2/setting file]"
 			<< "\n\nEXAMPLE:\n\n" 	
 			<< argv[0]
-			<< " /home/xenial/Datasets/KITTI/sequences/00/image_0 /home/xenial/WS_Farid/orb_slam2_TUT/Examples/Monocular/KITTI00-02.yaml\n\n"
+			<< " /home/xenial/Datasets/KITTI/sequences/00 /home/xenial/WS_Farid/orb_slam2_TUT/Examples/Monocular/KITTI00-02.yaml\n\n"
 			<< endl;
 }
 
