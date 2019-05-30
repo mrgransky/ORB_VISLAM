@@ -25,10 +25,13 @@ namespace ORB_VISLAM
 	class System
 	{
 		public:
-			System( const std::string &settingFilePath, float scale);
+			System( const std::string &settingFilePath, float scale,
+						int win_sz, float ssd_th, float ssd_ratio_th);
 			
 			System( const std::string &settingFilePath, float scale,
+					int win_sz, float ssd_th, float ssd_ratio_th,
 					double &ref_lat, double &ref_lng, double &ref_alt);
+					
 			~System();
 			
 			void run(cv::Mat &frame, std::string &frame_name, std::ofstream &file_cam);

@@ -19,7 +19,8 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Vision::Vision(const string &settingFilePath)
+Vision::Vision(const string &settingFilePath,
+						int win_sz, float ssd_th, float ssd_ratio_th)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -79,14 +80,11 @@ Vision::Vision(const string &settingFilePath)
 	
 	IMG_ = cv::Mat::zeros(fSettings["Camera.height"], fSettings["Camera.width"], CV_8UC3);
 	
-	cout 	<< "ch  = " 		<< IMG_.channels() 
-			<< " , depth  = " 	<< IMG_.depth()
-			<< " , type  = " 	<< IMG_.type() 
-			<< " , dim  = " 	<< IMG_.dims 
-			<< " , size  = "	<<IMG_.size() 
-			<< endl;
-	
 
+	vWS 			= win_sz;
+	vSSD_TH 		= ssd_th;
+	vSSD_ratio_TH 	= ssd_ratio_th;
+	
 	R_f = cv::Mat::eye(3, 3, CV_64F);
 	t_f = cv::Mat::zeros(3, 1, CV_64F);
 }
@@ -116,12 +114,12 @@ vector<KeyPoint> Vision::getKP(Mat &rawImg)
 
 Mat Vision::getBlock(Mat &img, Point2f &point)
 {
-	Mat Block = Mat::zeros(window_size, window_size, CV_32F);
+	Mat Block = Mat::zeros(vWS, vWS, CV_32F);
 	int r = 0;
 	int c = 0;
-	for(int u = -window_size/2; u < window_size/2 + 1; u++)
+	for(int u = -vWS/2; u < vWS/2 + 1; u++)
 	{
-		for(int v = -window_size/2; v < window_size/2 + 1; v++)
+		for(int v = -vWS/2; v < vWS/2 + 1; v++)
 		{
 			if(int(point.y)+u >= 0 && int(point.x)+v >= 0)
 			{
@@ -145,7 +143,7 @@ float Vision::getSSD(Mat &block_1, Mat &block_2)
 		for(int yy = 0; yy < block_2.cols; yy++)
 		{
 			float df = block_2.at<float>(xx,yy) - block_1.at<float>(xx,yy);
-			float dfSq = df*df/(window_size*window_size);
+			float dfSq = df*df/(vWS*vWS);
 			ssd = ssd + dfSq;
 		}
 	}
@@ -158,8 +156,8 @@ void Vision::getMatches(Mat img_1, vector<KeyPoint> keyP1,
 {	
 	
 
-	Mat block_2 	= Mat::zeros(window_size, window_size, CV_32F);
-	Mat block_1 	= Mat::zeros(window_size, window_size, CV_32F);
+	Mat block_2 	= Mat::zeros(vWS, vWS, CV_32F);
+	Mat block_1 	= Mat::zeros(vWS, vWS, CV_32F);
 	vector<Point2f> kp1_vec;	
 	for(size_t i = 0; i < keyP1.size(); i++)
 	{
@@ -190,11 +188,11 @@ void Vision::getMatches(Mat img_1, vector<KeyPoint> keyP1,
 		double ssd_ratio;
 		ssd_ratio = static_cast<double>(ssd_tot[0])/static_cast<double>(ssd_tot[1]);
 		
-		if(ssd_tot[0] < ssd_th)
+		if(ssd_tot[0] < vSSD_TH)
 		{
 			for (size_t k = 0; k < ssd_unsorted_vec.size(); k++)
 			{
-				if (ssd_unsorted_vec[k] == ssd_tot[0] && ssd_ratio < ssd_ratio_th)
+				if (ssd_unsorted_vec[k] == ssd_tot[0] && ssd_ratio < vSSD_ratio_TH)
 				{
 					matches.push_back(make_pair(i,k));
 				}

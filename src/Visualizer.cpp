@@ -34,8 +34,13 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl
 	
 	vTcam 	= T_cam;
 	
+	// TODO: Ground Truth must be added!
+	vTgt 	= Mat::eye(4, 4, CV_32F);
+	
 	vFPS 	= fps;
 	vScale	= scale;
+	
+	
 	hasFrame = frame_avl;
 	
 	vImg_W = im.cols;
@@ -76,6 +81,7 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool 
 	vTcam 	= T_cam;
 	vFPS 	= fps;
 	vScale	= scale;
+	
 	
 	hasFrame = frame_avl;
 	
@@ -255,9 +261,9 @@ void Visualizer::openGL_()
 		Triplet current_cam_pt;
 		
 		draw_wrd_axis();
-
-		pT_gt 	= getCurrentPose(vTgt);
+		
 		pTc 	= getCurrentPose(vTcam);
+		pT_gt 	= getCurrentPose(vTgt);
 		
 		if (counter_KF%50 == 0)
 		{
@@ -278,8 +284,6 @@ void Visualizer::openGL_()
 		current_cam_pt.y = vTcam.at<float>(1,3);
 		current_cam_pt.z = vTcam.at<float>(2,3);
 		
-		
-		
 		vertices_gt.push_back(current_gt_pt);
 		vertices_cam.push_back(current_cam_pt);
 		
@@ -293,12 +297,11 @@ void Visualizer::openGL_()
 void Visualizer::run()
 {
 
-	openCV_();
-	/*thread t1(&Visualizer::openCV_, this);
+	thread t1(&Visualizer::openCV_, this);
 	thread t2(&Visualizer::openGL_, this);
 
 	t1.join();
-	t2.join();*/
+	t2.join();
 }
 
 pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)

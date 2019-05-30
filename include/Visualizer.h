@@ -20,6 +20,7 @@ namespace ORB_VISLAM
 		public:
 			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, 
 						cv::Mat T_GT, float scale, bool &frame_avl);
+						
 			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, float scale, bool &frame_avl);
 			
 			struct Triplet;

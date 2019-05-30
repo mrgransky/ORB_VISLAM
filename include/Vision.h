@@ -18,7 +18,8 @@ namespace ORB_VISLAM
 	class Vision
 	{
 		public:	
-			Vision(const std::string &settingFilePath);
+			Vision(const std::string &settingFilePath,
+						int win_sz, float ssd_th, float ssd_ratio_th);
 			
 			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);
 			
@@ -38,9 +39,10 @@ namespace ORB_VISLAM
     		cv::Mat mDistCoef;
     		std::vector<cv::KeyPoint> ref_kp;
     		cv::Mat R_f, t_f;
-			int window_size 	= 11;
-			float ssd_th 		= 10.0f;
-			float ssd_ratio_th 	= 0.8f;
+    		
+			int vWS;
+			float vSSD_TH, vSSD_ratio_TH;
+			
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp,
     									std::vector<std::pair<int,int>> &matches);

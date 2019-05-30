@@ -68,10 +68,14 @@ int main( int argc, char** argv )
     import_seq(seqPath, imgFolder, vTimestamps);
     int nImages = vTimestamps.size();
     
-    float window_scale = 0.74f;
+    float frame_scale = 0.74f;
+    int window_sz_BM = 11;
+    float ssd_th = 50.0f;
+    float ssd_ratio_th = .8f;
+    
     cout << "no images = " << nImages << endl;
 	
-	ORB_VISLAM::System mySLAM(argv[2], window_scale);
+	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th);
 	
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 

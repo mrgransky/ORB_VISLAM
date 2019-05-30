@@ -125,8 +125,13 @@ int main( int argc, char** argv )
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
-    float window_scale = 0.48f;
-	ORB_VISLAM::System mySLAM(argv[2], window_scale, geo.lat[0], geo.lng[0], geo.alt[0]);
+    float frame_scale = 0.48f;
+    int window_sz_BM = 11;
+    float ssd_th = 10.0f;
+    float ssd_ratio_th = .8f;
+    
+	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th,
+								geo.lat[0], geo.lng[0], geo.alt[0]);
 	
 	
 	vector<size_t> keyIMG;
@@ -158,7 +163,7 @@ int main( int argc, char** argv )
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
 	//for(int ni = 0; ni < nImages; ni++) 
 	{
-		cout 	<<"\n\nReading Frame["	<< imgName[keyIMG[ni]] << "]" << endl;
+		cout 	<<"\n\nReading Frame ["	<< imgName[keyIMG[ni]] << "]" << endl;
 		string frame_name = imgName[keyIMG[ni]];
 		Mat img = imread(string(argv[1]) + "frames/" + imgName[keyIMG[ni]], 
 								CV_LOAD_IMAGE_GRAYSCALE);
@@ -173,16 +178,8 @@ int main( int argc, char** argv )
 		
 		if(img.channels() < 3) //this should be always true
 		{
-			cout << "ch B4 = \t" << img.channels() 
-			<< " , depth B4 = \t" << img.depth()
-			<< " , type B4 = \t" << img.type() 
-			<< endl;
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		cout << "ch after = \t" << img.channels() 
-		<< " , depth after = \t" << img.depth()
-		<< " , type after = \t" << img.type() 
-		<< endl;
 		
 		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 

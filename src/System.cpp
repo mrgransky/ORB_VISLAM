@@ -7,7 +7,8 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-System::System(	const string &settingFilePath, float scale)
+System::System(	const string &settingFilePath, float scale,
+						int win_sz, float ssd_th, float ssd_ratio_th)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -17,7 +18,7 @@ System::System(	const string &settingFilePath, float scale)
 	frame_avl = true;
 	
 	// init vision class:
-	visionPtr		= new Vision(settingFilePath);
+	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th);
 	
 	// initialize visualizer class
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, visionPtr->T_cam, 
@@ -28,6 +29,7 @@ System::System(	const string &settingFilePath, float scale)
 }
 
 System::System(	const string &settingFilePath, float scale,
+				int win_sz, float ssd_th, float ssd_ratio_th,
 				double &ref_lat, 
 				double &ref_lng, 
 				double &ref_alt)/*:	init_absPose(ref_lat, ref_lng, ref_alt),
@@ -43,7 +45,7 @@ System::System(	const string &settingFilePath, float scale,
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
 	// init vision class:
-	visionPtr		= new Vision(settingFilePath);
+	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th);
 	
 	// initialize visualizer class
 	visualizerPtr 	= new Visualizer(	visionPtr->IMG_, visionPtr->T_cam, visionPtr->fps, 
