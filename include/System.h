@@ -25,9 +25,9 @@ namespace ORB_VISLAM
 	class System
 	{
 		public:
-			System( const std::string &settingFilePath);
+			System( const std::string &settingFilePath, float scale);
 			
-			System( const std::string &settingFilePath, 
+			System( const std::string &settingFilePath, float scale,
 					double &ref_lat, double &ref_lng, double &ref_alt);
 			~System();
 			

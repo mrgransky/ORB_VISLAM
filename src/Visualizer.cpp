@@ -18,15 +18,24 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat &im, Mat T_cam, bool &frame_avl)
+Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER"															<< endl;
+	cout << "\t\t\tVISUALIZER V"														<< endl;
 	cout << "#########################################################################" << endl;
+	
+	cout 	<< "\nOrig Image:\n\nch  = " 	<< im.channels() 
+			<< " , depth  = " 			<< im.depth()
+			<< " , type  = " 			<< im.type() 
+			<< " , dim  = " 			<< im.dims 
+			<< " , size  = "			<< im.size() 
+			<< endl;
 	
 	vTcam 	= T_cam;
 	
+	vFPS 	= fps;
+	vScale	= scale;
 	hasFrame = frame_avl;
 	
 	vImg_W = im.cols;
@@ -37,33 +46,54 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, bool &frame_avl)
 	
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
 	
-	
-	cout << "ch vImgScaled = \t" << vImgScaled.channels() << endl;
+	cout 	<< "\nScaled Image:\n\nch  = " 		<< vImgScaled.channels() 
+			<< " , depth  = " 	<< vImgScaled.depth()
+			<< " , type  = " 	<< vImgScaled.type() 
+			<< " , dim  = " 	<< vImgScaled.dims 
+			<< " , size  = "	<< vImgScaled.size() 
+			<< endl;
 	
 	//cout << "has frame init with: \t"<< hasFrame<< endl;
 }
 
 
-Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, bool &frame_avl)
+Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool &frame_avl)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER"															<< endl;
+	cout << "\t\t\tVISUALIZER VI"														<< endl;
 	cout << "#########################################################################" << endl;
+	
+	cout 	<< "\nOrig Image:\n\nch  = " 	<< im.channels() 
+			<< " , depth  = " 				<< im.depth()
+			<< " , type  = " 				<< im.type() 
+			<< " , dim  = " 				<< im.dims 
+			<< " , size  = "				<< im.size() 
+			<< endl;
+	
 	
 	vTgt 	= T_GT;
 	vTcam 	= T_cam;
+	vFPS 	= fps;
+	vScale	= scale;
 	
 	hasFrame = frame_avl;
 	
 	vImg_W = im.cols;
 	vImg_H = im.rows;
 	
-	vImgScaled_W = vImg_W * scale;
-	vImgScaled_H = vImg_H * scale;
+	vImgScaled_W = vImg_W * vScale;
+	vImgScaled_H = vImg_H * vScale;
 			
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
 	//cout << "has frame init with: \t"<< hasFrame<< endl;
+	
+	cout 	<< "\nScaled Image:\n\nch  = " 	<< vImgScaled.channels() 
+			<< " , depth  = " 				<< vImgScaled.depth()
+			<< " , type  = " 				<< vImgScaled.type() 
+			<< " , dim  = " 				<< vImgScaled.dims 
+			<< " , size  = "				<< vImgScaled.size() 
+			<< endl;
 }
 
 struct Visualizer::Triplet
@@ -78,7 +108,7 @@ void Visualizer::draw_KP(Mat &scaled_win, vector<KeyPoint> &kp)
 	{
 		for (size_t i = 0; i < vKP_ref.size(); i++)
 		{
-			Point2f pt_ref(scale*vKP_ref[i].pt.x, scale*vKP_ref[i].pt.y);
+			Point2f pt_ref(vScale*vKP_ref[i].pt.x, vScale*vKP_ref[i].pt.y);
 			cv::circle(scaled_win, pt_ref, 1, Scalar(1,240,180), FILLED);
 		}
 	} else
@@ -88,7 +118,7 @@ void Visualizer::draw_KP(Mat &scaled_win, vector<KeyPoint> &kp)
 	
 	for (size_t i = 0; i < kp.size(); i++)
 	{
-		Point2f pt_curr(.5*scaled_win.cols + scale*kp[i].pt.x, scale*kp[i].pt.y);
+		Point2f pt_curr(.5*scaled_win.cols + vScale*kp[i].pt.x, vScale*kp[i].pt.y);
 		cv::circle(scaled_win, pt_curr, 1, Scalar(199,199,20), FILLED);
 	}
 }
@@ -105,10 +135,10 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 			int parent 	= matches[i].first;
 			int match 	= matches[i].second;
 		
-			Point2f pt_1 = scale * vKP_ref[parent].pt;
+			Point2f pt_1 = vScale * vKP_ref[parent].pt;
 			cv::circle(scaled_win, pt_1, 3, Scalar(1,111,197), LINE_4);
 	
-			Point2f pt_2(.5*scaled_win.cols + scale * kp[match].pt.x, scale * kp[match].pt.y);
+			Point2f pt_2(.5*scaled_win.cols + vScale * kp[match].pt.x, vScale * kp[match].pt.y);
 			cv::circle(scaled_win, pt_2, 3, Scalar(1,111,197), LINE_4);
 	
 			cv::line(scaled_win, pt_1, pt_2, Scalar(rand() % max + min, 
@@ -120,11 +150,10 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 void Visualizer::show(Mat &frame, 
 			vector<KeyPoint> &kp, 
 			vector<pair<int,int>> &matches,
-			string &frame_name, int fps)
+			string &frame_name)
 {
 	vImg 		= frame;
 	vImg_name 	= frame_name;
-	vFPS 		= fps;
 	
 	Mat vImg_tmp, vImgR_tmp;
 	
@@ -148,12 +177,10 @@ void Visualizer::show(Mat &frame,
 	cv::putText(vImgScaled, s_img.str(), 
 				cv::Point(.01*vImgScaled.cols + .5*vImgScaled.cols, .1*vImgScaled.rows),
     			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
-
-
+    			
 	vImgR 		= vImg;
 	vImgR_name 	= vImg_name;
 	vKP_ref		= kp;
-	
 }
 
 void Visualizer::openCV_()
@@ -161,11 +188,10 @@ void Visualizer::openCV_()
 	if(!vImg.empty())
 	{	
 		while(hasFrame)
-		{
-			//imshow(frameWinName, vImg);
+		{	
 			imshow(frameWinName, vImgScaled);
 			waitKey(vFPS);
-			
+
 			//waitKey(0);
 		}
 		//destroyWindow(frameWinName);
@@ -266,11 +292,13 @@ void Visualizer::openGL_()
 
 void Visualizer::run()
 {
-	thread t1(&Visualizer::openCV_, this);
+
+	openCV_();
+	/*thread t1(&Visualizer::openCV_, this);
 	thread t2(&Visualizer::openGL_, this);
 
 	t1.join();
-	t2.join();
+	t2.join();*/
 }
 
 pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)

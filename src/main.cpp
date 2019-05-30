@@ -113,6 +113,7 @@ int main( int argc, char** argv )
 	Angle ang;
 	Geodesy geo;
 	
+	
 	string gnss_insFile = string(argv[1])+"/matchedNovatelData.csv";
     load_GNSS_INS(gnss_insFile, ang, geo);
     
@@ -124,7 +125,9 @@ int main( int argc, char** argv )
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
-	ORB_VISLAM::System mySLAM(argv[2], geo.lat[0], geo.lng[0], geo.alt[0]);
+    float window_scale = 0.48f;
+	ORB_VISLAM::System mySLAM(argv[2], window_scale, geo.lat[0], geo.lng[0], geo.alt[0]);
+	
 	
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
@@ -181,9 +184,9 @@ int main( int argc, char** argv )
 		<< " , type after = \t" << img.type() 
 		<< endl;
 		
-		/*mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
+		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
-					f_GT, f_cam);*/
+					f_GT, f_cam);
 		
 	}
 	clock_t tEnd = clock();

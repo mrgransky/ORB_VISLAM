@@ -18,8 +18,9 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(cv::Mat &im, cv::Mat T_GT, cv::Mat T_cam, bool &frame_avl);
-			Visualizer(cv::Mat &im, cv::Mat T_cam, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, 
+						cv::Mat T_GT, float scale, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, float scale, bool &frame_avl);
 			
 			struct Triplet;
 			void draw_wrd_axis();
@@ -36,11 +37,12 @@ namespace ORB_VISLAM
 			
 			//void show(cv::Mat &frame, std::string &frame_name, int fps);
 			std::vector<cv::KeyPoint> vKP_ref;
-			
+
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
 						std::vector<std::pair<int,int>> &matches,
-						std::string &frame_name, int fps);
+						std::string &frame_name);
+						
 			
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
@@ -52,7 +54,7 @@ namespace ORB_VISLAM
 			
 			std::mutex visualizerMutex;
 			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
-			float scale = 0.48f;
+			float vScale;
 			int vFPS;
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);

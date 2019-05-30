@@ -21,7 +21,7 @@ void import_seq(const string &path,
 				vector<double> &vTimestamps)
 {
 	imgFiles = path + "/image_0/%06d.png";
-	string tsFile = path + +"/times.txt";
+	string tsFile = path +"/times.txt";
 	ifstream f;
 	f.open(tsFile.c_str());
 
@@ -60,16 +60,18 @@ int main( int argc, char** argv )
 		printHelp(argv);
 		return -1; 
 	}
-    
 	//Mat img;
-	string seqPath = string(argv[1]);
+	string seqPath = argv[1];
 	
 	vector<double> vTimestamps;		// retrieve ts
 	string imgFolder;
     import_seq(seqPath, imgFolder, vTimestamps);
     int nImages = vTimestamps.size();
     
-	//ORB_VISLAM::System mySLAM(argv[2]);
+    float window_scale = 0.74f;
+    cout << "no images = " << nImages << endl;
+	
+	ORB_VISLAM::System mySLAM(argv[2], window_scale);
 	
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
@@ -95,6 +97,7 @@ int main( int argc, char** argv )
 	char filename[100];
 	Mat imgT;
 	clock_t tStart = clock();
+	
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
 	//for(int ni = 0; ni < nImages; ni++) 
 	{
@@ -115,24 +118,17 @@ int main( int argc, char** argv )
 		
 		if(img.channels() < 3) //this should be always true
 		{
-			cout << "ch B4 = \t" << img.channels() 
-			<< " , depth B4 = \t" << img.depth()
-			<< " , type B4 = \t" << img.type() 
-			<< endl;
+					
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		cout << "ch after = \t" << img.channels() 
-		<< " , depth after = \t" << img.depth()
-		<< " , type after = \t" << img.type() 
-		<< endl;
-		//mySLAM.run(img, frame_name, f_cam);
+		mySLAM.run(img, frame_name, f_cam);
 	}
 	clock_t tEnd = clock();
     
-    double runTime;
-    runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
+	double runTime;
+	runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
     
-    cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
-    //mySLAM.shutdown();
+	cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
+	//mySLAM.shutdown();
 	return 0;
 }

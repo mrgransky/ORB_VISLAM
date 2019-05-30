@@ -79,8 +79,14 @@ Vision::Vision(const string &settingFilePath)
 	
 	IMG_ = cv::Mat::zeros(fSettings["Camera.height"], fSettings["Camera.width"], CV_8UC3);
 	
-	cout << "ch IMG_ = \t" << IMG_.channels() << endl;
+	cout 	<< "ch  = " 		<< IMG_.channels() 
+			<< " , depth  = " 	<< IMG_.depth()
+			<< " , type  = " 	<< IMG_.type() 
+			<< " , dim  = " 	<< IMG_.dims 
+			<< " , size  = "	<<IMG_.size() 
+			<< endl;
 	
+
 	R_f = cv::Mat::eye(3, 3, CV_64F);
 	t_f = cv::Mat::zeros(3, 1, CV_64F);
 }

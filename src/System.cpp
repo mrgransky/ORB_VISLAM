@@ -7,7 +7,7 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
-System::System(	const string &settingFilePath)
+System::System(	const string &settingFilePath, float scale)
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
@@ -20,14 +20,14 @@ System::System(	const string &settingFilePath)
 	visionPtr		= new Vision(settingFilePath);
 	
 	// initialize visualizer class
-	visualizerPtr 	= new Visualizer(visionPtr->IMG_, visionPtr->T_cam, frame_avl);
+	visualizerPtr 	= new Visualizer(visionPtr->IMG_, visionPtr->T_cam, 
+										visionPtr->fps, scale, frame_avl);
 	
 	// run visualizer thread
 	visThread 		= new thread(&Visualizer::run, visualizerPtr);
-
 }
 
-System::System(	const string &settingFilePath, 
+System::System(	const string &settingFilePath, float scale,
 				double &ref_lat, 
 				double &ref_lng, 
 				double &ref_alt)/*:	init_absPose(ref_lat, ref_lng, ref_alt),
@@ -35,7 +35,7 @@ System::System(	const string &settingFilePath,
 {
 	cout << "\n\n" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\t\tSYSTEN VI"														<< endl;
+	cout << "\t\t\t\tSYSTEN VI"															<< endl;
 	cout << "#########################################################################" << endl;
 	frame_avl = true;
 	
@@ -46,8 +46,9 @@ System::System(	const string &settingFilePath,
 	visionPtr		= new Vision(settingFilePath);
 	
 	// initialize visualizer class
-	visualizerPtr 	= new Visualizer(visionPtr->IMG_, absPosePtr->T_abs, 
-										visionPtr->T_cam, frame_avl);
+	visualizerPtr 	= new Visualizer(	visionPtr->IMG_, visionPtr->T_cam, visionPtr->fps, 
+										absPosePtr->T_abs, scale, frame_avl);
+	
 	
 	// run visualizer thread
 	visThread 		= new thread(&Visualizer::run, visualizerPtr);
@@ -59,29 +60,27 @@ System::~System()
 }
 
 void System::run(Mat &raw_frame, string &frame_name, ofstream &file_cam)
-{	
-	int sFPS = visionPtr->fps;
+{
 
 	vector<pair<int,int>> matches;
 	vector<KeyPoint> KP;
 	
 	visionPtr->Analyze(raw_frame, KP, matches);
-	visualizerPtr->show(raw_frame, KP, matches, frame_name, sFPS);	
+	visualizerPtr->show(raw_frame, KP, matches, frame_name);
+	
 	saveTraj(visionPtr->T_cam, file_cam);
 }
 
 void System::run(Mat &raw_frame, string &frame_name, double &lat, double &lng, double &alt, 
 					double &roll, double &pitch, double &heading, 
 					ofstream &file_GT, ofstream &file_cam)
-{	
-	int sFPS = visionPtr->fps;
+{
 
 	vector<pair<int,int>> matches;
 	vector<KeyPoint> KP;
 	
 	visionPtr->Analyze(raw_frame, KP, matches);
-	visualizerPtr->show(raw_frame, KP, matches, frame_name, sFPS);
-	
+	visualizerPtr->show(raw_frame, KP, matches, frame_name);
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
 	saveTraj(absPosePtr->T_abs, file_GT);
 	saveTraj(visionPtr->T_cam, file_cam);
