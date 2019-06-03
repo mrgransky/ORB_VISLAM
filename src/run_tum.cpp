@@ -14,54 +14,6 @@
 
 using namespace std;
 using namespace cv;
-#define PI 3.1415926f
-
-struct Angle { vector<double> roll, pitch, heading;};
-struct Geodesy {vector<double> lat, lng, alt;};
-
-
-void load_GNSS_INS(const string &file_path, Angle &angle, Geodesy &geodecy)
-{
-	ifstream csvFile;
-	csvFile.open(file_path.c_str());
-
-	 if (!csvFile.is_open())
-    {
-        cout << "Wrong Path!!!!" << endl;
-        exit(EXIT_FAILURE);
-    }
-    string line;
-    vector <string> vec;
-    getline(csvFile, line); // skip the 1st line (header)
-
-    while (getline(csvFile,line))
-    {
-        if (line.empty()) // skip empty lines:
-        {
-            //cout << "empty line!" << endl;
-            continue;
-        }
-
-        istringstream iss(line);
-        string lineStream;
-        string::size_type sz;
-
-		vector <double> lineGNSS_INS;
-
-		while (getline(iss, lineStream, ','))
-		{
-			lineGNSS_INS.push_back(stold(lineStream,&sz)); // convert to double
-			//lineGNSS_INS.push_back(stof(lineStream,&sz)); // convert to float
-		}
-		geodecy.lat.push_back(lineGNSS_INS[3]);
-		geodecy.lng.push_back(lineGNSS_INS[4]);
-		geodecy.alt.push_back(lineGNSS_INS[5]);
-
-		angle.roll.push_back(lineGNSS_INS[8]);
-		angle.pitch.push_back(lineGNSS_INS[7]);
-		angle.heading.push_back(lineGNSS_INS[6]);
-    }
-}
 
 void LoadImages(const string &path, 
 				vector<string> &imgName, 
@@ -69,10 +21,13 @@ void LoadImages(const string &path,
 {
 	ifstream f;
 	f.open(path.c_str());
-
+	string s;
+	getline(f,s);
+	getline(f,s);
+	getline(f,s);
+	
 	while(!f.eof()) // end of the file (eof)
 	{
-		string s;
 		getline(f,s);
 		if(!s.empty())
 		{
@@ -98,7 +53,7 @@ void printHelp(char ** argv)
 			<< " [/path/2/image_folder] [/path/2/setting file]"
 			<< "\n\nEXAMPLE:\n\n" 	
 			<< argv[0]
-			<< " /home/xenial/Datasets/CIVIT/Dec_14/VideoFiles/seq1_short/ /home/xenial/WS_Farid/orb_slam2_TUT/settingFiles/civit.yaml\n\n"
+			<< " /home/xenial/Datasets/TUM/rgbd_dataset_freiburg1_xyz /home/xenial/WS_Farid/orb_slam2_TUT/Examples/Monocular/TUM1.yaml\n\n"
 			<< endl;
 }
 
@@ -109,31 +64,21 @@ int main( int argc, char** argv )
 		printHelp(argv);
 		return -1; 
 	}
-	
-	Angle ang;
-	Geodesy geo;
-	
-	
-	string gnss_insFile = string(argv[1])+"/matchedNovatelData.csv";
-    load_GNSS_INS(gnss_insFile, ang, geo);
     
 	//Mat img;
-	string imgFile = string(argv[1])+"/frames/rgb.txt"; // open rgb.txt from the img folder
+	string imgFile = string(argv[1])+"/rgb.txt"; // open rgb.txt from the img folder
 	
 	vector<double> vTimestamps;		// retrieve ts 
 	vector<string> imgName; 		// retrieve img file names ex: rgb/frame_145.jpg
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
-    float frame_scale = 0.48f;
+    float frame_scale = 0.9f;
     int window_sz_BM = 11;
     float ssd_th = 10.0f;
     float ssd_ratio_th = .8f;
     
-	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th,
-								geo.lat[0], geo.lng[0], geo.alt[0]);
-	
-	
+	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th);
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
 	{
@@ -145,17 +90,12 @@ int main( int argc, char** argv )
 	cout 	<< "\nMatching process of " 		<< keyIMG.size() 
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
+	// TODO: the following path does not exist =>> modify it ...
+	string traj_cam = string(argv[1])+"frames/VO_Trajectory_EuRoC.txt";
 	
-	string traj_GT = string(argv[1])+"frames/GNSS_INS_Trajectory.txt";
-	string traj_cam = string(argv[1])+"frames/VO_Trajectory.txt";
-	
-	ofstream f_GT, f_cam;
-	f_GT.open(traj_GT.c_str());
+	ofstream f_cam;
 	f_cam.open(traj_cam.c_str());
 	
-	f_GT << fixed;
-	f_GT << "x,y,z"<< endl;
-
 	f_cam << fixed;
 	f_cam << "x,y,z"<< endl;
 
@@ -165,13 +105,12 @@ int main( int argc, char** argv )
 	{
 		cout 	<<"\n\nReading Frame ["	<< imgName[keyIMG[ni]] << "]" << endl;
 		string frame_name = imgName[keyIMG[ni]];
-		Mat img = imread(string(argv[1]) + "frames/" + imgName[keyIMG[ni]], 
+		Mat img = imread(string(argv[1]) +"/"+ imgName[keyIMG[ni]], 
 								CV_LOAD_IMAGE_GRAYSCALE);
 		if(img.empty())
 		{
 			cerr	<<"\nFailed loading frame["
-					<< string(argv[1]) 				<< "frames/"
-					<< imgName[keyIMG[ni]] <<"]"
+					<< string(argv[1]) + "/" +imgName[keyIMG[ni]] <<"]"
 					<< endl;
 			return 1;
 		}
@@ -180,11 +119,7 @@ int main( int argc, char** argv )
 		{
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		
-		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
-					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
-					f_GT, f_cam);
-		
+		mySLAM.run(img, frame_name, f_cam);
 	}
 	clock_t tEnd = clock();
     

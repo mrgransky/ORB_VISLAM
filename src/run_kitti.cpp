@@ -122,7 +122,6 @@ int main( int argc, char** argv )
 		
 		if(img.channels() < 3) //this should be always true
 		{
-					
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 		mySLAM.run(img, frame_name, f_cam);

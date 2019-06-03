@@ -105,8 +105,8 @@ vector<KeyPoint> Vision::getKP(Mat &rawImg)
 	cout << "#########################################################################" << endl;*/
 
 	vector<KeyPoint> kp;
-	Ptr<FeatureDetector> 		detector 	= ORB::create();
-    Ptr<DescriptorExtractor> 	extractor 	= ORB::create();
+	Ptr<FeatureDetector> 		detector 	= ORB::create(400,1.2,8,31,0,2, ORB::FAST_SCORE,31,20);
+	Ptr<DescriptorExtractor> 	extractor 	= ORB::create();
     
 	detector->detect(rawImg, kp);
 	return kp;
@@ -289,8 +289,8 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, vector <pair<int,int>> &ma
 
 void Vision::setCurrentPose(Mat &R_, Mat &t_)
 {
-	Mat center = -R_.inv()*t_;
-	//Mat center = t_;
+	//Mat center = -R_.inv()*t_;
+	Mat center = t_;
 	
 	center.copyTo(T_cam.rowRange(0,3).col(3));
 	R_.copyTo(T_cam.rowRange(0,3).colRange(0,3));
