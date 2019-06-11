@@ -34,9 +34,10 @@ namespace ORB_VISLAM
 			const double f = 1.0 / f_inv;
 			
 			cv::Mat T_abs = cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat rvec_GT;
 		private:
 			double latRef, lngRef, altRef;
-			void setCurrentPose(cv::Mat &R_abs, cv::Mat &t_abs);
+			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
 	};
 }// namespace ORB_VISLAM
 

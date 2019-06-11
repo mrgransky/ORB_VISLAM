@@ -21,19 +21,11 @@ namespace ORB_VISLAM
 
 AbsolutePose::AbsolutePose(double &ref_lat, double &ref_lng, double &ref_alt)
 {
-	cout << "\n\n" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tABSOLUTE POSE {GNSS/INS}"											<< endl;
-	cout << "#########################################################################" << endl;
-	
 	latRef = ref_lat;
 	lngRef = ref_lng;
 	altRef = ref_alt;
 }
 
-/* Absolute Position using GNSS/INS
-Given:
-*/
 void AbsolutePose::calcPose(double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading)
 {
@@ -42,15 +34,16 @@ void AbsolutePose::calcPose(double &lat, double &lng, double &alt,
 	setCurrentPose(R_abs, t_abs);
 }
 
-void AbsolutePose::setCurrentPose(Mat &R_abs, Mat &t_abs)
+void AbsolutePose::setCurrentPose(Mat &R_, Mat &t_)
 {
-	//Mat center = -R_abs.inv()*t_abs;
-	Mat center = t_abs;
+	//Mat center = -R_.inv()*t_;
+	Mat center = t_;
 	
 	center.copyTo(T_abs.rowRange(0,3).col(3));
-	R_abs.copyTo(T_abs.rowRange(0,3).colRange(0,3));
-	
-	cout << "\n\nT_abs =\n" << T_abs<< endl;
+	R_.copyTo(T_abs.rowRange(0,3).colRange(0,3));
+	Rodrigues(R_, rvec_GT);
+	//cout << "rvec GT =\t" << rvec_GT.t()<< endl;
+	//cout << "\n\nT_abs =\n" << T_abs<< endl;
 }
 
 Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)

@@ -20,17 +20,10 @@ namespace ORB_VISLAM
 
 Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
 {
-	cout << "\n\n" << endl;
+	cout << "" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tVISUALIZER V"														<< endl;
 	cout << "#########################################################################" << endl;
-	
-	cout 	<< "\nOrig Image:\n\nch  = " 	<< im.channels() 
-			<< " , depth  = " 			<< im.depth()
-			<< " , type  = " 			<< im.type() 
-			<< " , dim  = " 			<< im.dims 
-			<< " , size  = "			<< im.size() 
-			<< endl;
 	
 	vTcam 	= T_cam;
 	
@@ -50,33 +43,16 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl
 	vImgScaled_H = vImg_H * scale;
 	
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-	
-	cout 	<< "\nScaled Image:\n\nch  = " 		<< vImgScaled.channels() 
-			<< " , depth  = " 	<< vImgScaled.depth()
-			<< " , type  = " 	<< vImgScaled.type() 
-			<< " , dim  = " 	<< vImgScaled.dims 
-			<< " , size  = "	<< vImgScaled.size() 
-			<< endl;
-	
 	//cout << "has frame init with: \t"<< hasFrame<< endl;
 }
 
-
 Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool &frame_avl)
 {
-	cout << "\n\n" << endl;
+	cout << "" << endl;
 	cout << "#########################################################################" << endl;
 	cout << "\t\t\tVISUALIZER VI"														<< endl;
 	cout << "#########################################################################" << endl;
-	
-	cout 	<< "\nOrig Image:\n\nch  = " 	<< im.channels() 
-			<< " , depth  = " 				<< im.depth()
-			<< " , type  = " 				<< im.type() 
-			<< " , dim  = " 				<< im.dims 
-			<< " , size  = "				<< im.size() 
-			<< endl;
-	
-	
+
 	vTgt 	= T_GT;
 	vTcam 	= T_cam;
 	vFPS 	= fps;
@@ -94,19 +70,12 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool 
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
 	//cout << "has frame init with: \t"<< hasFrame<< endl;
 	
-	cout 	<< "\nScaled Image:\n\nch  = " 	<< vImgScaled.channels() 
-			<< " , depth  = " 				<< vImgScaled.depth()
-			<< " , type  = " 				<< vImgScaled.type() 
-			<< " , dim  = " 				<< vImgScaled.dims 
-			<< " , size  = "				<< vImgScaled.size() 
-			<< endl;
 }
 
 struct Visualizer::Triplet
 {
 	float x, y, z;
 };
-
 
 void Visualizer::draw_KP(Mat &scaled_win, vector<KeyPoint> &kp)
 {
@@ -241,10 +210,7 @@ void Visualizer::openGL_()
 	pangolin::OpenGlMatrix pTc;
 	pTc.SetIdentity();
 	
-	
-	vector<Triplet> vertices_gt;
-	vector<Triplet> vertices_cam;
-	
+	vector<Triplet> vertices_gt, vertices_cam;
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	int counter_KF = 0;
@@ -256,10 +222,7 @@ void Visualizer::openGL_()
 		d_cam.Activate(s_cam);
 		glClearColor(1,1,1,1);
 		
-
-		Triplet current_gt_pt;
-		Triplet current_cam_pt;
-		
+		Triplet current_gt_pt, current_cam_pt;
 		draw_wrd_axis();
 		
 		pTc 	= getCurrentPose(vTcam);

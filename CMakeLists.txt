@@ -55,34 +55,6 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-add_executable(${PROJECT_NAME}_tum 
-				src/run_tum.cpp
-				src/System.cpp
-				src/AbsolutePose.cpp
-				src/Vision.cpp
-				src/Visualizer.cpp
-				)
-target_link_libraries(${PROJECT_NAME}_tum ${LIBS})
-
-add_executable(${PROJECT_NAME}_kitti 
-				src/run_kitti.cpp
-				src/System.cpp
-				src/AbsolutePose.cpp
-				src/Vision.cpp
-				src/Visualizer.cpp
-				)
-target_link_libraries(${PROJECT_NAME}_kitti ${LIBS})
-
-add_executable(${PROJECT_NAME}_EuRoC 
-				src/run_euroc.cpp
-				src/System.cpp
-				src/AbsolutePose.cpp
-				src/Vision.cpp
-				src/Visualizer.cpp
-				)
-target_link_libraries(${PROJECT_NAME}_EuRoC ${LIBS})
-
-
 add_executable(${PROJECT_NAME}_civit 
 				src/run_civit.cpp
 				src/System.cpp

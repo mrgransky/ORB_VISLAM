@@ -20,7 +20,9 @@ struct Angle { vector<double> roll, pitch, heading;};
 struct Geodesy {vector<double> lat, lng, alt;};
 
 
-void load_GNSS_INS(const string &file_path, Angle &angle, Geodesy &geodecy)
+void load_GNSS_INS(const string &file_path, 
+					vector<double> &gpsTime, 
+					Angle &angle, Geodesy &geodecy)
 {
 	ifstream csvFile;
 	csvFile.open(file_path.c_str());
@@ -53,6 +55,7 @@ void load_GNSS_INS(const string &file_path, Angle &angle, Geodesy &geodecy)
 			lineGNSS_INS.push_back(stold(lineStream,&sz)); // convert to double
 			//lineGNSS_INS.push_back(stof(lineStream,&sz)); // convert to float
 		}
+		gpsTime.push_back(lineGNSS_INS[0]);
 		geodecy.lat.push_back(lineGNSS_INS[3]);
 		geodecy.lng.push_back(lineGNSS_INS[4]);
 		geodecy.alt.push_back(lineGNSS_INS[5]);
@@ -112,11 +115,14 @@ int main( int argc, char** argv )
 	
 	Angle ang;
 	Geodesy geo;
-	
+	vector<double> gpsT;
 	
 	string gnss_insFile = string(argv[1])+"/matchedNovatelData.csv";
-    load_GNSS_INS(gnss_insFile, ang, geo);
+    load_GNSS_INS(gnss_insFile, gpsT, ang, geo);
     
+    
+    //cout << "ang roll sz =\t" << ang.roll.size()<< endl;
+    //cout << "gpsT sz =\t" << gpsT.size()<< endl;
 	//Mat img;
 	string imgFile = string(argv[1])+"/frames/rgb.txt"; // open rgb.txt from the img folder
 	
@@ -125,10 +131,10 @@ int main( int argc, char** argv )
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
-    float frame_scale = 0.48f;
-    int window_sz_BM = 11;
-    float ssd_th = 10.0f;
-    float ssd_ratio_th = .8f;
+    float frame_scale 	= 0.48f;
+    int window_sz_BM 	= 15;
+    float ssd_th 		= 15.0f;
+    float ssd_ratio_th 	= 0.6f;
     
 	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th,
 								geo.lat[0], geo.lng[0], geo.alt[0]);
@@ -146,18 +152,19 @@ int main( int argc, char** argv )
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
 	
-	string traj_GT = string(argv[1])+"frames/GNSS_INS_Trajectory.txt";
-	string traj_cam = string(argv[1])+"frames/VO_Trajectory.txt";
+	string traj_GT = string(argv[1])+"frames/GT.txt";
+	string vo_file = string(argv[1])+"frames/VO.txt";
 	
 	ofstream f_GT, f_cam;
 	f_GT.open(traj_GT.c_str());
-	f_cam.open(traj_cam.c_str());
+	f_cam.open(vo_file.c_str());
 	
 	f_GT << fixed;
-	f_GT << "x,y,z"<< endl;
+	f_GT << "rvec_x[rad],rvec_y[rad],rvec_z[rad],R00,R01,R02,tx,R10,R11,R12,ty,R20,R21,R22,tz"<< endl;
 
 	f_cam << fixed;
-	f_cam << "x,y,z"<< endl;
+	f_cam 	<< "GpsTime,Lat[deg],lng[deg],alt[m],roll[deg],pitch[deg],heading[deg],sol1_rvec_x[rad],sol1_rvec_y[rad],sol1_rvec_z[rad], sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x[rad],sol2_rvec_y[rad],sol2_rvec_z[rad],sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x[rad],sol3_rvec_y[rad],sol3_rvec_z[rad],sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,sol4_rvec_x[rad],sol4_rvec_y[rad],sol4_rvec_z[rad],sol4_R00,sol4_R01,sol4_R02,sol4_tx,sol4_R10,sol4_R11,sol4_R12,sol4_ty,sol4_R20,sol4_R21,sol4_R22,sol4_tz" 
+			<< endl;
 
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
@@ -181,7 +188,8 @@ int main( int argc, char** argv )
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 		
-		mySLAM.run(img, frame_name, geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]],
+		mySLAM.run(img, frame_name, gpsT[keyIMG[ni]], 
+					geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]], 
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
 					f_GT, f_cam);
 		

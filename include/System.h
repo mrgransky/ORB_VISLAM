@@ -36,17 +36,32 @@ namespace ORB_VISLAM
 			
 			void run(cv::Mat &frame, std::string &frame_name, std::ofstream &file_cam);
 			
-			void run(cv::Mat &frame, std::string &frame_name, 
+			void run(cv::Mat &frame, std::string &frame_name, double &gpsT,
 						double &lat, double &lng, double &alt, 
 						double &roll, double &pitch, double &heading, 
 						std::ofstream &file_GT, std::ofstream &file_cam);
 		
-		
-		
 			void shutdown();
+			
 		private:
+			std::vector<cv::Mat> R_prev, t_prev, rvec_prev;
+			
 			AbsolutePose* absPosePtr;
-			void saveTraj(cv::Mat T, std::ofstream &file_);
+			
+			void saveTraj(cv::Mat &T, cv::Mat &rvec, std::ofstream &file_);
+			
+			void saveVOFile(double &gpsT, double &lat, double &lng, double &alt, 
+							double &roll, double &pitch, double &heading,
+							cv::Mat &T, std::ofstream &file_);
+			
+			void saveVOFile(double &gpsT, double &lat, double &lng, double &alt, 
+							double &roll, double &pitch, double &heading,
+							std::vector<cv::Mat> &R_dc, 
+							std::vector<cv::Mat> &t_dc, 
+							std::vector<cv::Mat> &rvec, 
+							std::ofstream &file_);
+							
+			
 			Visualizer* visualizerPtr;
 			Vision*		visionPtr;
 			

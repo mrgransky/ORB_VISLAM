@@ -30,7 +30,10 @@ namespace ORB_VISLAM
 			float focal;
 			cv::Point2f pp;
 			float sc = 1.0f;
-			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);		
+    		std::vector<cv::Mat> Rdec, tdec;
+    		std::vector<cv::Mat> vrvec_dec;
+    		
+			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);
 		private:
 		
 			std::vector<cv::KeyPoint> getKP(cv::Mat &rawImg);
@@ -51,19 +54,7 @@ namespace ORB_VISLAM
 			float getSSD(cv::Mat &block_1, cv::Mat &block_2);
 			
 			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point);
-			
-    		/*
-			int getSSD(cv::Mat &block_r, cv::Mat &block_c);
-			
-			void getMatches(cv::Mat img_1, cv::Mat img_2, 
-							std::vector<cv::KeyPoint> keyP1, 
-							std::vector<cv::KeyPoint> keyP2,
-							std::vector<std::pair<int,int>> &matches);
-							
-			std::vector<std::pair<int,int>> crossCheckMatching(	
-											std::vector <std::pair<int,int>> C2R,
-											std::vector <std::pair<int,int>> R2C);*/
-							
+
 			void getMatches(cv::Mat img_1, std::vector<cv::KeyPoint> keyP1, 
 							cv::Mat img_2, std::vector<cv::KeyPoint> keyP2,	
 							std::vector<std::pair<int,int>> &matches);
@@ -77,7 +68,7 @@ namespace ORB_VISLAM
 			cv::Mat getHomography(	const std::vector<cv::Point2f> &p_ref, 
 									const std::vector<cv::Point2f> &p_mtch);
 			
-			void decomposeHomography(cv::Mat homography);
+			void decomHomography(cv::Mat &homography);
 	};
 }// namespace ORB_VISLAM
 #endif // VISION_H
