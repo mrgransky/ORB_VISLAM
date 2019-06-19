@@ -26,7 +26,7 @@ namespace ORB_VISLAM
 	{
 		public:
 			System( const std::string &settingFilePath, float scale,
-						int win_sz, float ssd_th, float ssd_ratio_th, int minFeat);
+						int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeat);
 			
 			System( const std::string &settingFilePath, float scale,
 					int win_sz, float ssd_th, float ssd_ratio_th, int minFeat,

@@ -17,7 +17,7 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 Vision::Vision(const string &settingFilePath,
-						int win_sz, float ssd_th, float ssd_ratio_th, int minFeatures)
+						int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeatures)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;

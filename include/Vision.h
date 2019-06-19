@@ -19,7 +19,7 @@ namespace ORB_VISLAM
 	{
 		public:	
 			Vision(const std::string &settingFilePath,
-						int win_sz, float ssd_th, float ssd_ratio_th, int minFeatures);
+						int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeatures);
 			
 			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);
 			
@@ -67,7 +67,8 @@ namespace ORB_VISLAM
     		cv::Mat t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
     		
 			std::vector<cv::Mat> iden;
-			int vWS, vMIN_NUM_FEAT;
+			int vWS;
+			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
 			
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
