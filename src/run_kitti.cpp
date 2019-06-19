@@ -69,13 +69,15 @@ int main( int argc, char** argv )
     int nImages = vTimestamps.size();
     
     float frame_scale = 0.74f;
-    int window_sz_BM = 11;
-    float ssd_th = 50.0f;
-    float ssd_ratio_th = .8f;
-    
+    int window_sz_BM 	= 3;
+    float ssd_th 		= 12.0f;
+    float ssd_ratio_th 	= 0.7f;
+    size_t MIN_NUM_FEAT 	= 10;
+	
     cout << "no images = " << nImages << endl;
 	
-	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th);
+	ORB_VISLAM::System mySLAM(argv[2], frame_scale, 
+								window_sz_BM, ssd_th, ssd_ratio_th, MIN_NUM_FEAT);
 	
 	vector<size_t> keyIMG;
 	for(int ni = 0; ni < nImages; ni++) 
@@ -89,14 +91,20 @@ int main( int argc, char** argv )
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
 	
-	// TODO: the following path does not exist =>> modify it ...
-	string traj_cam = string(argv[1])+"frames/VO_Trajectory_KITTI.txt";
+	string vo_file 		= string(argv[1])	+ "/VO.txt";
+	string homog_file 	= string(argv[1])	+ "/Homography.txt";
 	
-	ofstream f_cam;
-	f_cam.open(traj_cam.c_str());
+	ofstream file_vo, file_homography;	
 	
-	f_cam << fixed;
-	f_cam << "x,y,z"<< endl;
+	file_vo.open(vo_file.c_str());
+	file_homography.open(homog_file.c_str());
+	
+	file_vo << fixed;
+	file_vo << "matches12,matches21,matchesCCM,sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz" << endl;
+
+	file_homography << fixed;
+	file_homography << "H_00,H_01,H_02,H_10,H_11,H_12,H_20,H_21,H_22" << endl;
+
 
 	char filename[100];
 	Mat imgT;
@@ -124,7 +132,7 @@ int main( int argc, char** argv )
 		{
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		mySLAM.run(img, frame_name, f_cam);
+		mySLAM.run(img, frame_name, file_vo, file_homography);
 	}
 	clock_t tEnd = clock();
     

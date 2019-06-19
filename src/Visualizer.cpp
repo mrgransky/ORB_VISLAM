@@ -18,6 +18,43 @@ using namespace cv;
 namespace ORB_VISLAM
 {
 
+// all four solutions:
+Visualizer::Visualizer(Mat &im, Mat T_cam_0, Mat T_cam_1, 
+								Mat T_cam_2, Mat T_cam_3, 
+								int fps, float scale, bool &frame_avl)
+{
+	cout << "" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tVISUALIZER V: 4 solutions"											<< endl;
+	cout << "#########################################################################" << endl;
+	
+	vTcam_0 	= T_cam_0;
+	vTcam_1 	= T_cam_1;
+	vTcam_2 	= T_cam_2;
+	vTcam_3 	= T_cam_3;
+	
+	// TODO: Ground Truth must be added!
+	vTgt 	= Mat::eye(4, 4, CV_32F);
+	
+	vFPS 	= fps;
+	vScale	= scale;
+	
+	
+	hasFrame = frame_avl;
+	
+	vImg_W = im.cols;
+	vImg_H = im.rows;
+	
+	vImgScaled_W = vImg_W * scale;
+	vImgScaled_H = vImg_H * scale;
+	
+	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
+	//cout << "has frame init with: \t"<< hasFrame<< endl;
+}
+
+
+
+
 Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
 {
 	cout << "" << endl;
@@ -180,8 +217,8 @@ void Visualizer::openCV_()
 
 void Visualizer::openGL_()
 {
-	float width = 1600;
-    float heigth = 900;
+	float width 	= 1600;
+    float heigth 	= 500;
     
     pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
     glEnable(GL_DEPTH_TEST);
@@ -211,6 +248,9 @@ void Visualizer::openGL_()
 	pTc.SetIdentity();
 	
 	vector<Triplet> vertices_gt, vertices_cam;
+
+	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
+
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	int counter_KF = 0;
@@ -223,8 +263,80 @@ void Visualizer::openGL_()
 		glClearColor(1,1,1,1);
 		
 		Triplet current_gt_pt, current_cam_pt;
+		Triplet current_cam_pt_0, current_cam_pt_1, current_cam_pt_2, current_cam_pt_3;
+		
 		draw_wrd_axis();
 		
+		
+		
+		
+		
+		// ######## added for all 4 solutions:
+		
+		pangolin::OpenGlMatrix pTc_0;
+		pTc_0.SetIdentity();
+	
+		pTc_0 	= getCurrentPose(vTcam_0);
+
+		draw(pTc_0, .01,.01,.92); // blue
+		
+		// camera:
+		current_cam_pt_0.x = vTcam_0.at<float>(0,3);
+		current_cam_pt_0.y = vTcam_0.at<float>(1,3);
+		current_cam_pt_0.z = vTcam_0.at<float>(2,3);
+		vertices_cam_0.push_back(current_cam_pt_0);
+		
+		draw_path(vertices_cam_0, .2, .8, .8);
+		
+		pangolin::OpenGlMatrix pTc_1;
+		pTc_1.SetIdentity();
+		
+		pTc_1 	= getCurrentPose(vTcam_1);
+
+		draw(pTc_1, .08,.84,.02); // green
+		
+		// camera:
+		current_cam_pt_1.x = vTcam_1.at<float>(0,3);
+		current_cam_pt_1.y = vTcam_1.at<float>(1,3);
+		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
+		vertices_cam_1.push_back(current_cam_pt_1);
+		
+		draw_path(vertices_cam_1, .52,.58,.01);
+		
+		pangolin::OpenGlMatrix pTc_2;
+		pTc_2.SetIdentity();
+		
+		pTc_2 	= getCurrentPose(vTcam_2);
+
+		draw(pTc_2, .01, .01, .01); // black
+		
+		// camera:
+		current_cam_pt_2.x = vTcam_2.at<float>(0,3);
+		current_cam_pt_2.y = vTcam_2.at<float>(1,3);
+		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
+		vertices_cam_2.push_back(current_cam_pt_2);
+		
+		draw_path(vertices_cam_2, .8,.03, .01);
+		
+		pangolin::OpenGlMatrix pTc_3;
+		pTc_3.SetIdentity();
+	
+		pTc_3 	= getCurrentPose(vTcam_3);
+	
+		draw(pTc_3,.91,.02,.01); // red
+		
+		// camera:
+		current_cam_pt_3.x = vTcam_3.at<float>(0,3);
+		current_cam_pt_3.y = vTcam_3.at<float>(1,3);
+		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
+		vertices_cam_3.push_back(current_cam_pt_3);
+		
+		draw_path(vertices_cam_3, .6,.91, .1);
+			
+		// ######## added for all 4 solutions:
+		
+		
+		/*// ##########  Original implementation: ###########
 		pTc 	= getCurrentPose(vTcam);
 		pT_gt 	= getCurrentPose(vTgt);
 		
@@ -233,7 +345,7 @@ void Visualizer::openGL_()
 			KeyFrames.push_back(pT_gt);
 		}
 		draw(pT_gt,.1,.1,.1);
-		draw_KF(KeyFrames);	
+		//draw_KF(KeyFrames);	
 		draw(pTc,.8,0,0);
 		
 		//s_cam.Follow(T_gt);
@@ -241,18 +353,19 @@ void Visualizer::openGL_()
 		current_gt_pt.x = vTgt.at<float>(0,3);
 		current_gt_pt.y = vTgt.at<float>(1,3);
 		current_gt_pt.z = vTgt.at<float>(2,3);
+		vertices_gt.push_back(current_gt_pt);
 		
 		// camera:
 		current_cam_pt.x = vTcam.at<float>(0,3);
 		current_cam_pt.y = vTcam.at<float>(1,3);
 		current_cam_pt.z = vTcam.at<float>(2,3);
-		
-		vertices_gt.push_back(current_gt_pt);
 		vertices_cam.push_back(current_cam_pt);
 		
 		draw_path(vertices_gt, .84, .83, .1);
 		counter_KF++;
 		draw_path(vertices_cam, .2,.8,.8);
+		// ##########  Original implementation: ###########*/
+
 		pangolin::FinishFrame();
 	}
 }

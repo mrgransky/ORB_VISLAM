@@ -22,6 +22,10 @@ namespace ORB_VISLAM
 						cv::Mat T_GT, float scale, bool &frame_avl);
 						
 			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, float scale, bool &frame_avl);
+		
+			Visualizer(cv::Mat &im, cv::Mat T_cam_0, cv::Mat T_cam_1, 
+						cv::Mat T_cam_2, cv::Mat T_cam_3, 
+						int fps, float scale, bool &frame_avl);
 			
 			struct Triplet;
 			void draw_wrd_axis();
@@ -51,6 +55,7 @@ namespace ORB_VISLAM
 			std::string frameWinName = "frames";
 			
 			cv::Mat vTgt, vTcam;
+			cv::Mat vTcam_0, vTcam_1, vTcam_2, vTcam_3;
 			
 			
 			std::mutex visualizerMutex;

@@ -19,7 +19,7 @@ namespace ORB_VISLAM
 	{
 		public:	
 			Vision(const std::string &settingFilePath,
-						int win_sz, float ssd_th, float ssd_ratio_th);
+						int win_sz, float ssd_th, float ssd_ratio_th, int minFeatures);
 			
 			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);
 			
@@ -33,17 +33,41 @@ namespace ORB_VISLAM
     		std::vector<cv::Mat> Rdec, tdec;
     		std::vector<cv::Mat> vrvec_dec;
     		
+    		cv::Mat R_f_0, R_f_1, R_f_2, R_f_3;
+    		cv::Mat rvec_0, rvec_1, rvec_2, rvec_3;
+    		
+    		cv::Mat t_f_0, t_f_1, t_f_2, t_f_3;
+    		
+    		
+    		
+			int nmatchesCCM = 0, nmatches12 = 0, nmatches21 = 0;
+			//cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);
+    		std::vector<cv::Mat> R_f, t_f;
 			cv::Mat T_cam = cv::Mat::eye(4, 4, CV_32F);
+			
+			cv::Mat Homography_Matrix = cv::Mat::eye(3, 3, CV_64F);
+			
+			cv::Mat T_cam_0 = cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat T_cam_1 = cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat T_cam_2 = cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat T_cam_3 = cv::Mat::eye(4, 4, CV_32F);
+			
 		private:
-		
+			std::vector<cv::Mat> R_dec_prev, t_dec_prev;
+			
 			std::vector<cv::KeyPoint> getKP(cv::Mat &rawImg);
 			cv::Mat ref_img;
     		cv::Mat mK;
     		cv::Mat mDistCoef;
     		std::vector<cv::KeyPoint> ref_kp;
-    		cv::Mat R_f, t_f;
     		
-			int vWS;
+    		cv::Mat R_f_prev_0, R_f_prev_1, R_f_prev_2, R_f_prev_3;
+    		cv::Mat rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;
+    		
+    		cv::Mat t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
+    		
+			std::vector<cv::Mat> iden;
+			int vWS, vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
 			
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
@@ -69,6 +93,8 @@ namespace ORB_VISLAM
 									const std::vector<cv::Point2f> &p_mtch);
 			
 			void decomHomography(cv::Mat &homography);
+			void calcPose(cv::Mat &homog);
+			
 	};
 }// namespace ORB_VISLAM
-#endif // VISION_H
+#endif // VISION_HR

@@ -13,12 +13,11 @@
 
 using namespace std;
 using namespace cv;
-#define MIN_NUM_FEAT 8
 
 namespace ORB_VISLAM
 {
 Vision::Vision(const string &settingFilePath,
-						int win_sz, float ssd_th, float ssd_ratio_th)
+						int win_sz, float ssd_th, float ssd_ratio_th, int minFeatures)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;
@@ -78,20 +77,57 @@ Vision::Vision(const string &settingFilePath,
 	
 	IMG_ = cv::Mat::zeros(fSettings["Camera.height"], fSettings["Camera.width"], CV_8UC3);
 	
-
 	vWS 			= win_sz;
 	vSSD_TH 		= ssd_th;
 	vSSD_ratio_TH 	= ssd_ratio_th;
-	
-	R_f = Mat::eye(3, 3, CV_64F);
-	t_f = Mat::zeros(3, 1, CV_64F);
+	vMIN_NUM_FEAT	= minFeatures;
 	
 	Mat identityMAT = Mat::eye(3, 3, CV_64F);
 	Mat zeroMAT = Mat::zeros(3, 1, CV_64F);
-
+	
+	R_dec_prev 		= vector<Mat>{identityMAT, identityMAT, identityMAT, identityMAT};
+	t_dec_prev 		= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
+	
+	vrvec_dec 	= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
 	Rdec 		= vector<Mat>{identityMAT, identityMAT, identityMAT, identityMAT};
 	tdec 		= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
-	vrvec_dec 	= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
+	
+	//R_f 		= vector<Mat>{identityMAT, identityMAT, identityMAT, identityMAT};
+	//R_f_prev 	= vector<Mat>{identityMAT, identityMAT, identityMAT, identityMAT};
+	
+	//t_f 		= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
+	//t_f_prev	= vector<Mat>{zeroMAT, zeroMAT, zeroMAT, zeroMAT};
+	
+	R_f_0 = Mat::eye(3, 3, CV_64F);
+	R_f_1 = Mat::eye(3, 3, CV_64F);
+	R_f_2 = Mat::eye(3, 3, CV_64F);
+	R_f_3 = Mat::eye(3, 3, CV_64F);
+	
+	rvec_0 = Mat::zeros(3, 1, CV_64F);
+	rvec_1 = Mat::zeros(3, 1, CV_64F);
+	rvec_2 = Mat::zeros(3, 1, CV_64F);
+	rvec_3 = Mat::zeros(3, 1, CV_64F);
+	
+	t_f_0 = Mat::zeros(3, 1, CV_64F);
+	t_f_1 = Mat::zeros(3, 1, CV_64F);
+	t_f_2 = Mat::zeros(3, 1, CV_64F);
+	t_f_3 = Mat::zeros(3, 1, CV_64F);
+	
+	R_f_prev_0 = Mat::eye(3, 3, CV_64F);
+	R_f_prev_1 = Mat::eye(3, 3, CV_64F);
+	R_f_prev_2 = Mat::eye(3, 3, CV_64F);
+	R_f_prev_3 = Mat::eye(3, 3, CV_64F);
+	
+	rvec_prev_0 = Mat::zeros(3, 1, CV_64F);
+	rvec_prev_1 = Mat::zeros(3, 1, CV_64F);
+	rvec_prev_2 = Mat::zeros(3, 1, CV_64F);
+	rvec_prev_3 = Mat::zeros(3, 1, CV_64F);
+	
+	
+	t_f_prev_0 = Mat::zeros(3, 1, CV_64F);
+	t_f_prev_1 = Mat::zeros(3, 1, CV_64F);
+	t_f_prev_2 = Mat::zeros(3, 1, CV_64F);
+	t_f_prev_3 = Mat::zeros(3, 1, CV_64F);
 }
 
 void Vision::Analyze(Mat &rawImg, vector<KeyPoint> &kp, vector<pair<int,int>> &matches)
@@ -105,7 +141,7 @@ void Vision::Analyze(Mat &rawImg, vector<KeyPoint> &kp, vector<pair<int,int>> &m
 vector<KeyPoint> Vision::getKP(Mat &rawImg)
 {
 	vector<KeyPoint> kp;
-	Ptr<FeatureDetector> 		detector 	= ORB::create(580,1.2,8,31,0,2, ORB::FAST_SCORE,31,20);
+	Ptr<FeatureDetector> 		detector 	= ORB::create(350,1.2,8,31,0,2, ORB::FAST_SCORE,31,20);
 	Ptr<DescriptorExtractor> 	extractor 	= ORB::create();
     
 	detector->detect(rawImg, kp);
@@ -235,6 +271,10 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, vector <pair<int,int>> &ma
 		matches = crossCheckMatching(matches12, matches21);
 		cout << "Matches (CCM) =\t" << matches.size()<< endl;
 		
+		nmatches12 = matches12.size();
+		nmatches21 = matches21.size();
+		nmatchesCCM = matches.size();
+		
 		vector<Point2f> pt_ref;
 		vector<Point2f> pt_matched;
 	
@@ -246,55 +286,32 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, vector <pair<int,int>> &ma
 			pt_ref.push_back(ref_kp[parent].pt);
 			pt_matched.push_back(kp[match].pt);
 		}
+		
 		if (!pt_ref.empty() && !pt_matched.empty() 
-							&& matches12.size() >= MIN_NUM_FEAT 
-							&& matches21.size() >= MIN_NUM_FEAT
-							&& matches.size() >= MIN_NUM_FEAT)
+							&& matches12.size() >= vMIN_NUM_FEAT 
+							&& matches21.size() >= vMIN_NUM_FEAT
+							&& matches.size() >= vMIN_NUM_FEAT)
 		{
-			/*Mat E, R, t, mask;
+			/*Homography_Matrix = getHomography(pt_ref, pt_matched);
+			cout << "\nH_own = \n" << Homography_Matrix << endl;*/
 			
-			E = findEssentialMat(pt_ref, pt_matched, focal, pp, RANSAC, 0.999, 1.0, mask);
-			recoverPose(E, pt_ref, pt_matched, R, t, focal, pp, mask);
-
-			//cout << "\nEssential Matrix = \n"<< E << endl;
-					
-			if((sc > 0.1) 	&& (t.at<double>(2) > t.at<double>(0)) 
-								&& (t.at<double>(2) > t.at<double>(1))) 
-			{
-				R_f = R * R_f;
-				t_f = t_f + sc*(R_f*t);
-			}
-			else 
-			{
-				cout << "scale below 0.1, or incorrect translation" << endl;
-			}
-			
-			setCurrentPose(R_f, t_f);
-			//setCurrentPose(R, t);
-			
-			Mat H_openCV = findHomography(pt_ref, pt_matched);
-			cout << "\n\nH_openCV = \n" << H_openCV << endl;
-	
-			Mat H = getHomography(pt_ref, pt_matched);
-			cout << "\nH_own = \n" << H << endl;*/
-			
-			Mat H_RANSAC = findHomography(pt_ref, pt_matched, RANSAC);
-			cout << "\n\nH_RANSAC = \n" << H_RANSAC << endl;
+			Homography_Matrix = findHomography(pt_ref, pt_matched, RANSAC);
+			cout << "\nH_RANSAC = \n" << Homography_Matrix << endl;
 			cout << "----------------------------------------------------------------" << endl;
-			decomHomography(H_RANSAC);
+			calcPose(Homography_Matrix);
 		}
 	}
 }
 
 void Vision::setCurrentPose(Mat &R_, Mat &t_)
 {
-	Mat center = -R_.inv()*t_;
-	//Mat center = t_;
+	//Mat center = -R_.inv()*t_;
+	Mat center = t_;
 	
 	center.copyTo(T_cam.rowRange(0,3).col(3));
 	R_.copyTo(T_cam.rowRange(0,3).colRange(0,3));
 	
-	cout << "\n\nT_cam =\n" << T_cam<< endl;
+	cout << "\nT_cam =\n" << T_cam << endl;
 }
 
 Mat Vision::getHomography(const vector<Point2f> &p_ref, const vector<Point2f> &p_mtch)
@@ -329,8 +346,6 @@ Mat Vision::getHomography(const vector<Point2f> &p_ref, const vector<Point2f> &p
         A.at<float>(2*i+1,7) = -p_mtch[i].x*p_ref[i].y;
         A.at<float>(2*i+1,8) = -p_mtch[i].x;
     }
-    
-    //cout << "\nA["<< A.rows << " x "<<A.cols << "]= \n"<< A << endl;
     
     // Add an extra line with zero.
 	if (nPoints == 4)
@@ -367,45 +382,82 @@ Mat Vision::getHomography(const vector<Point2f> &p_ref, const vector<Point2f> &p
 	return H;
 }
 
-void Vision::decomHomography(Mat &homography)
+void Vision::calcPose(Mat &homog)
 {
 	vector<Mat> Rs_decomp, ts_decomp, normals_decomp;
-	//float d_inv1 = 1.0f;
-
-	int solutions = decomposeHomographyMat(homography, mK, 
-											Rs_decomp, ts_decomp, normals_decomp);	
-	//vrvec_dec.resize(solutions);
 	
-	Rdec = Rs_decomp;
-	tdec = ts_decomp;
-	for (int i = 0; i < solutions; i++)
+	int solutions = decomposeHomographyMat(homog, mK, Rs_decomp, ts_decomp, normals_decomp);
+	
+	//cout << "founded solutions = \t"<< solutions << endl;
+	if (solutions >= 2)
 	{
-		//float factor_d1 = 1.0f / d_inv1;
+		Rdec = Rs_decomp;
+		tdec = ts_decomp;
 		
-		Mat rvec_decomp;
-		cv::Rodrigues(Rs_decomp[i], rvec_decomp);
-		vrvec_dec[i] = rvec_decomp;
-	
-		cout 	<< "Solution [" << i << "]:" << endl;
-		//cout 	<< "Rs_decomposed =\n"<< Rs_decomp[i] << endl;
+		R_f_0 = Rdec[0] * R_f_prev_0;
+		Rodrigues(R_f_0, rvec_0);
 		
-		cout 	<< "rvec decom \t = " << rvec_decomp.t() << endl;
-		cout 	<< "tvec decom \t = " << ts_decomp[i].t() 
-      			/*<< " \t * (1/d) \t = " << factor_d1 * ts_decomp[i].t()*/
-      			<< endl;
+		R_f_1 = Rdec[1] * R_f_prev_1;
+		Rodrigues(R_f_1, rvec_1);
 		
-		//cout << "tvec camera displacement \t =" << t_1to2.t() << endl;
+		R_f_2 = Rdec[2] * R_f_prev_2;
+		Rodrigues(R_f_2, rvec_2);
 		
-		cout << "n_decomposed \t = " << normals_decomp[i].t() << endl;
-		/*cout 	<< "nx*nx + ny*ny + nz*nz = \t\t" 	
-				<< 	(normals_decomp[i].at<double>(0,0) * normals_decomp[i].at<double>(0,0)) +
-					(normals_decomp[i].at<double>(1,0) * normals_decomp[i].at<double>(1,0)) +
-					(normals_decomp[i].at<double>(2,0) * normals_decomp[i].at<double>(2,0)) 
-				<< endl;*/
+		R_f_3 = Rdec[3] * R_f_prev_3;
+		Rodrigues(R_f_3, rvec_3);
 		
-		
-		//cout << "plane normal cam 1 pose \t =" << normal1.t()<< endl;
-		cout << "------------------------------------------------------" << endl;
+		t_f_0 = t_f_prev_0 + sc*(R_f_0*tdec[0]);
+		t_f_1 = t_f_prev_1 + sc*(R_f_1*tdec[1]);
+		t_f_2 = t_f_prev_2 + sc*(R_f_2*tdec[2]);
+		t_f_3 = t_f_prev_3 + sc*(R_f_3*tdec[3]);
 	}
+	
+	t_f_0.copyTo(T_cam_0.rowRange(0,3).col(3));
+	R_f_0.copyTo(T_cam_0.rowRange(0,3).colRange(0,3));
+	cout << "\nrvec_0 =\n" << rvec_0.t() << endl;
+
+	
+	//cout << "\nT_cam_0 =\n" << T_cam_0 << endl;
+
+	t_f_1.copyTo(T_cam_1.rowRange(0,3).col(3));
+	R_f_1.copyTo(T_cam_1.rowRange(0,3).colRange(0,3));
+	cout << "\nrvec_1 =\n" << rvec_1.t() << endl;
+
+	//cout << "\nT_cam_1 =\n" << T_cam_1 << endl;
+
+	t_f_2.copyTo(T_cam_2.rowRange(0,3).col(3));
+	R_f_2.copyTo(T_cam_2.rowRange(0,3).colRange(0,3));
+	cout << "\nrvec_2 =\n" << rvec_2.t() << endl;
+
+	//cout << "\nT_cam_2 =\n" << T_cam_2 << endl;
+
+	t_f_3.copyTo(T_cam_3.rowRange(0,3).col(3));
+	R_f_3.copyTo(T_cam_3.rowRange(0,3).colRange(0,3));
+	cout << "\nrvec_3 =\n" << rvec_3.t() << endl;
+
+	//cout << "\nT_cam_3 =\n" << T_cam_3 << endl;
+	
+	R_f_prev_0 	= R_f_0;
+	rvec_prev_0 = rvec_0;
+
+	R_f_prev_1 	= R_f_1;
+	rvec_prev_1 = rvec_1;
+
+	R_f_prev_2 	= R_f_2;
+	rvec_prev_2 = rvec_2;
+
+	R_f_prev_3 	= R_f_3;
+	rvec_prev_3 = rvec_3;
+	
+	
+	t_f_prev_0 = t_f_0;
+	t_f_prev_1 = t_f_1;
+	t_f_prev_2 = t_f_2;
+	t_f_prev_3 = t_f_3;
+	
+	
+	R_dec_prev 	= Rdec;
+	t_dec_prev 	= tdec;
 }
+
 }//namespace ORB_VISLAM
