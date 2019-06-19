@@ -111,6 +111,8 @@ int main( int argc, char** argv )
 		return -1; 
 	}
 	
+	
+	
 	string imgFile = string(argv[1])+"frames/rgb.txt"; // open rgb.txt from the img folder
 	
 	vector<double> vTimestamps;		// retrieve ts 

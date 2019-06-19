@@ -60,6 +60,8 @@ int main( int argc, char** argv )
 		printHelp(argv);
 		return -1; 
 	}
+	
+	
 	//Mat img;
 	string seqPath = argv[1];
 	

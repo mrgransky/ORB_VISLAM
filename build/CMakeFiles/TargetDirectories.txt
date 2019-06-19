@@ -1,4 +1,0 @@
-/home/xenial/WS_Farid/ORB_VISLAM/build/CMakeFiles/rebuild_cache.dir
-/home/xenial/WS_Farid/ORB_VISLAM/build/CMakeFiles/edit_cache.dir
-/home/xenial/WS_Farid/ORB_VISLAM/build/CMakeFiles/vo_kitti.dir
-/home/xenial/WS_Farid/ORB_VISLAM/build/CMakeFiles/vo_corridor.dir

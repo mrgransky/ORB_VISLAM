@@ -51,6 +51,8 @@ Vision::Vision(const string &settingFilePath,
     DistCoef.at<float>(3) 	= fSettings["Camera.p2"];
     const float k3 			= fSettings["Camera.k3"];
 
+
+
     if(k3!=0)
     {
         DistCoef.resize(5);
