@@ -29,18 +29,19 @@ namespace ORB_VISLAM
 						int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeat);
 			
 			System( const std::string &settingFilePath, float scale,
-					int win_sz, float ssd_th, float ssd_ratio_th, int minFeat,
+					int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeat,
 					double &ref_lat, double &ref_lng, double &ref_alt);
 					
 			~System();
 			
 			void run(cv::Mat &frame, std::string &frame_name, 
-						std::ofstream &file_vo, std::ofstream &file_h);
+						std::ofstream &file_vo, std::ofstream &file_h, std::ofstream &file_e);
 			
 			void run(cv::Mat &frame, std::string &frame_name, double &gpsT,
 						double &lat, double &lng, double &alt, 
 						double &roll, double &pitch, double &heading, 
-						std::ofstream &file_GT, std::ofstream &file_vo, std::ofstream &file_cam);
+						std::ofstream &file_GT, 
+						std::ofstream &file_vo, std::ofstream &file_h, std::ofstream &file_e);
 		
 			void shutdown();
 			
@@ -51,28 +52,23 @@ namespace ORB_VISLAM
 			AbsolutePose* absPosePtr;
 			
 			void saveTraj(cv::Mat &T, std::ofstream &file_);
-			void saveHomography(cv::Mat &H, std::ofstream &file_);
 			
+			void saveMatrix(cv::Mat &Matrix, std::ofstream &file_);
 			void saveVOFile(int &m12, int &m21, int &mCCM,
 							cv::Mat &Tc_0, cv::Mat &rvec_0, 
 							cv::Mat &Tc_1, cv::Mat &rvec_1,
 							cv::Mat &Tc_2, cv::Mat &rvec_2,
 							cv::Mat &Tc_3, cv::Mat &rvec_3,
 							std::ofstream &file_);
-			
-			void saveVOFile(int &m12, int &m21, int &mCCM,
-							std::vector<cv::Mat> &R_, 
-							std::vector<cv::Mat> &t_,
-							std::ofstream &file_);
-			
-							
-			void saveVOFile(double &gpsT, double &lat, double &lng, double &alt, 
-							double &roll, double &pitch, double &heading,
-							int &m12, int &m21, int &mCCM,
-							std::vector<cv::Mat> &R_, 
-							std::vector<cv::Mat> &t_, 
-							std::vector<cv::Mat> &rvec,		
-							std::ofstream &file_);
+
+			void saveVO_CIVIT(double &gpsT, double &lat, double &lng, double &alt, 
+								double &roll, double &pitch, double &heading,
+								int &m12, int &m21, int &mCCM,
+								cv::Mat &Tc_0, cv::Mat &rvec_0, 
+								cv::Mat &Tc_1, cv::Mat &rvec_1,
+								cv::Mat &Tc_2, cv::Mat &rvec_2,
+								cv::Mat &Tc_3, cv::Mat &rvec_3,	
+								std::ofstream &file_);
 							
 			
 			Visualizer* visualizerPtr;

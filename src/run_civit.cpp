@@ -130,11 +130,13 @@ int main( int argc, char** argv )
     int nImages = imgName.size();
 
     float frame_scale 	= 0.48f;
-    int window_sz_BM 	= 35;
+    int window_sz_BM 	= 7;
     float ssd_th 		= 100.0f;
     float ssd_ratio_th 	= 0.6f;
-    
-	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, ssd_th, ssd_ratio_th,
+    size_t MIN_NUM_FEAT = 8;
+	
+	ORB_VISLAM::System mySLAM(argv[2], frame_scale, window_sz_BM, 
+								ssd_th, ssd_ratio_th, MIN_NUM_FEAT,
 								geo.lat[0], geo.lng[0], geo.alt[0]);
 	
 	vector<size_t> keyIMG;
@@ -149,27 +151,30 @@ int main( int argc, char** argv )
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
 	
-	string traj_cam = string(argv[1])	+ "frames/T_cam.txt";
-	string traj_GT = string(argv[1])	+ "frames/T_GT.txt";
-	string vo_file = string(argv[1])	+ "frames/VO.txt";
-	
-	ofstream f_GT, file_vo, file_cam;
+	string traj_GT 		= string(argv[1])	+ "frames/T_GT.txt";
+	string vo_file 		= string(argv[1])	+ "frames/VO.txt";
+	string homog_file 	= string(argv[1])	+ "frames/Homography_Matrix.txt";
+	string ess_mat_file = string(argv[1])	+ "frames/Essential_Matrix.txt";
+
+	ofstream f_GT, f_vo, f_homography, f_essential_matrix;
 	
 	f_GT.open(traj_GT.c_str());
-	file_cam.open(traj_cam.c_str());
-	file_vo.open(vo_file.c_str());
+	f_vo.open(vo_file.c_str());
+	f_homography.open(homog_file.c_str());
+	f_essential_matrix.open(ess_mat_file.c_str());
 	
-	
+	f_essential_matrix << fixed;
+	f_essential_matrix << "E_00,E_01,E_02,E_10,E_11,E_12,E_20,E_21,E_22" << endl;
+
 	f_GT << fixed;
 	f_GT << "R00,R01,R02,tx,R10,R11,R12,ty,R20,R21,R22,tz"<< endl;
 
-	file_cam << fixed;
-	file_cam << "R00,R01,R02,tx,R10,R11,R12,ty,R20,R21,R22,tz" << endl;
+	f_homography << fixed;
+	f_homography << "H_00,H_01,H_02,H_10,H_11,H_12,H_20,H_21,H_22" << endl;
 
 
-	file_vo << fixed;
-	file_vo 	<< "GpsTime,Lat[deg],lng[deg],alt[m],roll[deg],pitch[deg],heading[deg],matches12,matches21,matchesCCM,sol1_rvec_x[rad],sol1_rvec_y[rad],sol1_rvec_z[rad], sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x[rad],sol2_rvec_y[rad],sol2_rvec_z[rad],sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x[rad],sol3_rvec_y[rad],sol3_rvec_z[rad],sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,sol4_rvec_x[rad],sol4_rvec_y[rad],sol4_rvec_z[rad],sol4_R00,sol4_R01,sol4_R02,sol4_tx,sol4_R10,sol4_R11,sol4_R12,sol4_ty,sol4_R20,sol4_R21,sol4_R22,sol4_tz" 
-			<< endl;
+	f_vo << fixed;
+	f_vo 	<< "GpsTime,Lat[deg],lng[deg],alt[m],roll[deg],pitch[deg],heading[deg],matches12,matches21,matchesCCM,sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz" << endl;
 
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
@@ -195,7 +200,7 @@ int main( int argc, char** argv )
 		mySLAM.run(img, frame_name, gpsT[keyIMG[ni]], 
 					geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]], 
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
-					f_GT, file_vo, file_cam);
+					f_GT, f_vo, f_homography, f_essential_matrix);
 		
 	}
 	clock_t tEnd = clock();

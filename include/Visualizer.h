@@ -18,14 +18,23 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, 
-						cv::Mat T_GT, float scale, bool &frame_avl);
-						
-			Visualizer(cv::Mat &im, cv::Mat T_cam, int fps, float scale, bool &frame_avl);
-		
-			Visualizer(cv::Mat &im, cv::Mat T_cam_0, cv::Mat T_cam_1, 
-						cv::Mat T_cam_2, cv::Mat T_cam_3, 
+			// ##################### 4 soultions ##################### //
+			Visualizer(cv::Mat &im, cv::Mat T_GT, cv::Mat T_cam, 
 						int fps, float scale, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_GT, 
+									cv::Mat T_cam_0, cv::Mat T_cam_1, 
+									cv::Mat T_cam_2, cv::Mat T_cam_3, 
+									int fps, float scale, bool &frame_avl);
+			// ##################### 4 soultions ##################### //
+						
+			
+			// ##################### 1 soultions ##################### //
+			Visualizer(cv::Mat &im, cv::Mat T_cam, 
+						int fps, float scale, bool &frame_avl);
+			Visualizer(cv::Mat &im, cv::Mat T_cam_0, cv::Mat T_cam_1, 
+									cv::Mat T_cam_2, cv::Mat T_cam_3, 
+									int fps, float scale, bool &frame_avl);
+			// ##################### 1 soultions ##################### //
 			
 			struct Triplet;
 			void draw_wrd_axis();

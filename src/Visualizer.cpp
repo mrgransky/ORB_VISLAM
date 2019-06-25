@@ -28,6 +28,8 @@ Visualizer::Visualizer(Mat &im, Mat T_cam_0, Mat T_cam_1,
 	cout << "\t\t\tVISUALIZER V: 4 solutions"											<< endl;
 	cout << "#########################################################################" << endl;
 	
+	vTcam 		= Mat::eye(4, 4, CV_32F);
+	
 	vTcam_0 	= T_cam_0;
 	vTcam_1 	= T_cam_1;
 	vTcam_2 	= T_cam_2;
@@ -39,7 +41,6 @@ Visualizer::Visualizer(Mat &im, Mat T_cam_0, Mat T_cam_1,
 	vFPS 	= fps;
 	vScale	= scale;
 	
-	
 	hasFrame = frame_avl;
 	
 	vImg_W = im.cols;
@@ -49,52 +50,27 @@ Visualizer::Visualizer(Mat &im, Mat T_cam_0, Mat T_cam_1,
 	vImgScaled_H = vImg_H * scale;
 	
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-	//cout << "has frame init with: \t"<< hasFrame<< endl;
 }
 
-
-
-
-Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
+Visualizer::Visualizer(Mat &im, Mat T_GT, 
+								Mat T_cam_0, Mat T_cam_1, 
+								Mat T_cam_2, Mat T_cam_3,
+								int fps, float scale, bool &frame_avl)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER V"														<< endl;
+	cout << "\t\t\tVISUALIZER VI 4 camera solution"										<< endl;
 	cout << "#########################################################################" << endl;
-	
-	vTcam 	= T_cam;
-	
-	// TODO: Ground Truth must be added!
-	vTgt 	= Mat::eye(4, 4, CV_32F);
+
+	vTgt 		= T_GT;
+	vTcam 		= Mat::eye(4, 4, CV_32F);
+	vTcam_0 	= T_cam_0;
+	vTcam_1 	= T_cam_1;
+	vTcam_2 	= T_cam_2;
+	vTcam_3 	= T_cam_3;
 	
 	vFPS 	= fps;
 	vScale	= scale;
-	
-	
-	hasFrame = frame_avl;
-	
-	vImg_W = im.cols;
-	vImg_H = im.rows;
-	
-	vImgScaled_W = vImg_W * scale;
-	vImgScaled_H = vImg_H * scale;
-	
-	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-	//cout << "has frame init with: \t"<< hasFrame<< endl;
-}
-
-Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool &frame_avl)
-{
-	cout << "" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER VI"														<< endl;
-	cout << "#########################################################################" << endl;
-
-	vTgt 	= T_GT;
-	vTcam 	= T_cam;
-	vFPS 	= fps;
-	vScale	= scale;
-	
 	
 	hasFrame = frame_avl;
 	
@@ -105,8 +81,65 @@ Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, Mat T_GT, float scale, bool 
 	vImgScaled_H = vImg_H * vScale;
 			
 	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-	//cout << "has frame init with: \t"<< hasFrame<< endl;
+}
+
+
+Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
+{
+	cout << "" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tVISUALIZER V 1 camera solution"										<< endl;
+	cout << "#########################################################################" << endl;
 	
+	// TODO: Ground Truth must be added!
+	vTgt 		= Mat::eye(4, 4, CV_32F);
+	
+	vTcam 		= T_cam;
+	vTcam_0 	= Mat::eye(4, 4, CV_32F);
+	vTcam_1 	= Mat::eye(4, 4, CV_32F);
+	vTcam_2 	= Mat::eye(4, 4, CV_32F);
+	vTcam_3 	= Mat::eye(4, 4, CV_32F);
+	
+	vFPS 	= fps;
+	vScale	= scale;
+	
+	hasFrame = frame_avl;
+	
+	vImg_W = im.cols;
+	vImg_H = im.rows;
+	
+	vImgScaled_W = vImg_W * scale;
+	vImgScaled_H = vImg_H * scale;
+	
+	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
+}
+
+Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, int fps, float scale, bool &frame_avl)
+{
+	cout << "" << endl;
+	cout << "#########################################################################" << endl;
+	cout << "\t\t\tVISUALIZER VI 1 camera solution"										<< endl;
+	cout << "#########################################################################" << endl;
+
+	vTgt 		= T_GT;
+	vTcam 		= T_cam;
+	vTcam_0 	= Mat::eye(4, 4, CV_32F);
+	vTcam_1 	= Mat::eye(4, 4, CV_32F);
+	vTcam_2 	= Mat::eye(4, 4, CV_32F);
+	vTcam_3 	= Mat::eye(4, 4, CV_32F);
+	
+	vFPS 	= fps;
+	vScale	= scale;
+	
+	hasFrame = frame_avl;
+	
+	vImg_W = im.cols;
+	vImg_H = im.rows;
+	
+	vImgScaled_W = vImg_W * vScale;
+	vImgScaled_H = vImg_H * vScale;
+			
+	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
 }
 
 struct Visualizer::Triplet
@@ -242,16 +275,12 @@ void Visualizer::openGL_()
 	// GNSS/INS in World Coordinate:
     pangolin::OpenGlMatrix pT_gt;
 	pT_gt.SetIdentity();
+	vector<Triplet> vertices_gt;
+	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
-	// camera in World Coordinate:
-	pangolin::OpenGlMatrix pTc;
-	pTc.SetIdentity();
 	
-	vector<Triplet> vertices_gt, vertices_cam;
 
 	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
-
-	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
@@ -262,22 +291,42 @@ void Visualizer::openGL_()
 		d_cam.Activate(s_cam);
 		glClearColor(1,1,1,1);
 		
-		Triplet current_gt_pt, current_cam_pt;
-		Triplet current_cam_pt_0, current_cam_pt_1, current_cam_pt_2, current_cam_pt_3;
 		
 		draw_wrd_axis();
 		
 		
+		// ############ Draw GROUND TRUTH ############
+		Triplet current_gt_pt;
+		pT_gt 	= getCurrentPose(vTgt);
+		
+		if (counter_KF%50 == 0)
+		{
+			KeyFrames.push_back(pT_gt);
+		}
+		draw(pT_gt,.1,.18,.1);
+		//draw_KF(KeyFrames);	
+		
+		//s_cam.Follow(pT_gt);
+		// GNSS/INS:
+		current_gt_pt.x = vTgt.at<float>(0,3);
+		current_gt_pt.y = vTgt.at<float>(1,3);
+		current_gt_pt.z = vTgt.at<float>(2,3);
+		
+		vertices_gt.push_back(current_gt_pt);
+		
+		draw_path(vertices_gt, .84, .83, .1);
+		
+		counter_KF++;
+		// ############ Draw GROUND TRUTH ############
 		
 		
 		
-		// ######## added for all 4 solutions:
 		
+		Triplet current_cam_pt_0, current_cam_pt_1, current_cam_pt_2, current_cam_pt_3;
+		// ############ 4 solutions ############
 		pangolin::OpenGlMatrix pTc_0;
 		pTc_0.SetIdentity();
-	
 		pTc_0 	= getCurrentPose(vTcam_0);
-
 		draw(pTc_0, .01,.01,.92); // blue
 		
 		// camera:
@@ -286,7 +335,7 @@ void Visualizer::openGL_()
 		current_cam_pt_0.z = vTcam_0.at<float>(2,3);
 		vertices_cam_0.push_back(current_cam_pt_0);
 		
-		draw_path(vertices_cam_0, .2, .8, .8);
+		draw_path(vertices_cam_0, .15, .72, .01);
 		
 		pangolin::OpenGlMatrix pTc_1;
 		pTc_1.SetIdentity();
@@ -301,7 +350,7 @@ void Visualizer::openGL_()
 		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
 		vertices_cam_1.push_back(current_cam_pt_1);
 		
-		draw_path(vertices_cam_1, .52,.58,.01);
+		draw_path(vertices_cam_1, .852,.858,.801);
 		
 		pangolin::OpenGlMatrix pTc_2;
 		pTc_2.SetIdentity();
@@ -316,7 +365,7 @@ void Visualizer::openGL_()
 		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
 		vertices_cam_2.push_back(current_cam_pt_2);
 		
-		draw_path(vertices_cam_2, .8,.03, .01);
+		draw_path(vertices_cam_2, .95,.03, .01);
 		
 		pangolin::OpenGlMatrix pTc_3;
 		pTc_3.SetIdentity();
@@ -331,41 +380,29 @@ void Visualizer::openGL_()
 		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
 		vertices_cam_3.push_back(current_cam_pt_3);
 		
-		draw_path(vertices_cam_3, .6,.91, .1);
-			
-		// ######## added for all 4 solutions:
+		draw_path(vertices_cam_3, .9,.91, .51);
+		// ############ 4 solutions ############
 		
 		
-		/*// ##########  Original implementation: ###########
+		// ############ 1 solution ############
+		// camera in World Coordinate:
+		Triplet current_cam_pt;
+		pangolin::OpenGlMatrix pTc;
+		pTc.SetIdentity();
+		vector<Triplet>	vertices_cam;
+
 		pTc 	= getCurrentPose(vTcam);
-		pT_gt 	= getCurrentPose(vTgt);
-		
-		if (counter_KF%50 == 0)
-		{
-			KeyFrames.push_back(pT_gt);
-		}
-		draw(pT_gt,.1,.1,.1);
-		//draw_KF(KeyFrames);	
-		draw(pTc,.8,0,0);
-		
-		//s_cam.Follow(T_gt);
-		// GNSS/INS:
-		current_gt_pt.x = vTgt.at<float>(0,3);
-		current_gt_pt.y = vTgt.at<float>(1,3);
-		current_gt_pt.z = vTgt.at<float>(2,3);
-		vertices_gt.push_back(current_gt_pt);
-		
+		draw(pTc, .8, 0, 0);
+	
 		// camera:
 		current_cam_pt.x = vTcam.at<float>(0,3);
 		current_cam_pt.y = vTcam.at<float>(1,3);
 		current_cam_pt.z = vTcam.at<float>(2,3);
 		vertices_cam.push_back(current_cam_pt);
 		
-		draw_path(vertices_gt, .84, .83, .1);
-		counter_KF++;
-		draw_path(vertices_cam, .2,.8,.8);
-		// ##########  Original implementation: ###########*/
-
+		draw_path(vertices_cam, .12,.18,.8);
+		// ############ 4 solutions ############
+		
 		pangolin::FinishFrame();
 	}
 }

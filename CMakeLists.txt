@@ -55,6 +55,15 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
+add_executable(${PROJECT_NAME}_civit 
+				src/run_civit.cpp
+				src/System.cpp
+				src/AbsolutePose.cpp
+				src/Vision.cpp
+				src/Visualizer.cpp
+				)
+target_link_libraries(${PROJECT_NAME}_civit ${LIBS})
+
 add_executable(${PROJECT_NAME}_corridor 
 				src/run_corridor.cpp
 				src/System.cpp
@@ -64,7 +73,7 @@ add_executable(${PROJECT_NAME}_corridor
 				)
 target_link_libraries(${PROJECT_NAME}_corridor ${LIBS})
 
-add_executable(${PROJECT_NAME}_kitti
+add_executable(${PROJECT_NAME}_kitti 
 				src/run_kitti.cpp
 				src/System.cpp
 				src/AbsolutePose.cpp
