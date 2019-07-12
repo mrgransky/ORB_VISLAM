@@ -1,29 +1,37 @@
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <pangolin/pangolin.h>
-
-#include <opencv2/core/eigen.hpp>
-#include <stdio.h>      /* printf, fopen */
-#include <stdlib.h>     /* exit, EXIT_FAILURE */
-#include <thread>
-
 #include "AbsolutePose.h"
 
 using namespace std;
 using namespace cv;
-#define PI 3.1415926f
 
 namespace ORB_VISLAM
 {
 
 AbsolutePose::AbsolutePose(double &ref_lat, double &ref_lng, double &ref_alt)
 {
+	T_abs = Mat::eye(4, 4, CV_32F);
+	
+	tprev = Mat::zeros(3, 1, CV_32F);
 	latRef = ref_lat;
 	lngRef = ref_lng;
 	altRef = ref_alt;
+}
+
+AbsolutePose::AbsolutePose()
+{
+	tprev = Mat::zeros(3, 1, CV_32F);
+	T_abs = Mat::eye(4, 4, CV_32F);
+}
+
+void AbsolutePose::set(Mat &T_GT)
+{
+	T_GT.copyTo(T_abs);
+	calcRotation(T_abs);
+	//cout << "T_abs = \n" <<T_abs<< endl;
+}
+
+void AbsolutePose::calcRotation(Mat &T)
+{
+	Rodrigues(T.rowRange(0,3).colRange(0,3), rvec_abs);
 }
 
 void AbsolutePose::calcPose(double &lat, double &lng, double &alt, 
@@ -32,23 +40,29 @@ void AbsolutePose::calcPose(double &lat, double &lng, double &alt,
 	Mat t_abs = lla2ENU(lat, lng, alt);
 	Mat R_abs = abs_rot(roll, pitch, heading);
 	setCurrentPose(R_abs, t_abs);
+	calcRotation(T_abs);
+	getScale(t_abs);
 }
 
 void AbsolutePose::setCurrentPose(Mat &R_, Mat &t_)
 {
-	//Mat center = -R_.inv()*t_;
-	Mat center = t_;
-	
-	center.copyTo(T_abs.rowRange(0,3).col(3));
+	t_.copyTo(T_abs.rowRange(0,3).col(3));
 	R_.copyTo(T_abs.rowRange(0,3).colRange(0,3));
-	Rodrigues(R_, rvec_GT);
-	//cout << "rvec GT =\t" << rvec_GT.t()<< endl;
-	cout << "\n\nT_abs =\n" << T_abs << endl;
+	//cout << "\n\nT_abs =\n" << T_abs << endl;
+}
+
+void AbsolutePose::getScale(Mat &t_)
+{	
+	AbsScale = sqrt(
+	(t_.at<float>(0,0) - tprev.at<float>(0,0)) * (t_.at<float>(0,0) - tprev.at<float>(0,0)) +
+	(t_.at<float>(1,0) - tprev.at<float>(1,0)) * (t_.at<float>(1,0) - tprev.at<float>(1,0)) +
+	(t_.at<float>(2,0) - tprev.at<float>(2,0)) * (t_.at<float>(2,0) - tprev.at<float>(2,0))
+					);
+	tprev = t_;
 }
 
 Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
 {
-
 	//=========================================================
 	// Geodetic to ECEF:
 	//=========================================================
@@ -57,8 +71,8 @@ Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
 	//float c,e2,s,xECEF,yECEF,zECEF;
 	//float cRef,x0,y0,z0, xEast, yNorth, zUp;
 
-	Mat t(3, 1, CV_32F, Scalar(0));
-
+	Mat t = Mat::zeros(3, 1, CV_32F);
+	
 	double c, e2, s, xECEF,yECEF,zECEF;
 	double cRef,x0,y0,z0, xEast, yNorth, zUp;
 
@@ -69,22 +83,23 @@ Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
 	s = (1.0 - f) * (1.0 - f) * c;
 	e2 = 1 - (1 - f) * (1 - f);
 
-	xECEF = (earth_rad * c + inpAlt) * (cos(inpLat * PI/180)) * cos(inpLong * PI/180);
-	yECEF = (earth_rad * c + inpAlt) * (cos(inpLat * PI/180)) * sin(inpLong * PI/180);
-	zECEF = (earth_rad * s + inpAlt) * (sin(inpLat * PI/180));
+	xECEF = (earth_rad * c + inpAlt) * (cos(inpLat * CV_PI/180)) * cos(inpLong * CV_PI/180);
+	yECEF = (earth_rad * c + inpAlt) * (cos(inpLat * CV_PI/180)) * sin(inpLong * CV_PI/180);
+	zECEF = (earth_rad * s + inpAlt) * (sin(inpLat * CV_PI/180));
 
 	//=========================================================
 	// ECEF 2 ENU
 	//=========================================================
 
-	cRef = 1 / sqrt(cos(latRef * PI/180) * cos(latRef * PI/180)+
-							(1-f) * (1-f) * sin(latRef * PI/180) * sin(latRef * PI/180));
+	cRef = 1 / sqrt(cos(latRef * CV_PI/180) * cos(latRef * CV_PI/180)+
+							(1-f) * (1-f) * sin(latRef * CV_PI/180) * sin(latRef * CV_PI/180));
 
 	x0 = (earth_rad*cRef + altRef)*cos(latRef*CV_PI/180)*cos(lngRef*CV_PI/180);
 	y0 = (earth_rad*cRef + altRef)*cos(latRef*CV_PI/180)*sin(lngRef*CV_PI/180);
 	z0 = (earth_rad*cRef*(1-e2) + altRef) * sin(latRef*CV_PI/180);
 
 	xEast = (-(xECEF-x0) * sin(lngRef*CV_PI/180)) + ((yECEF-y0)*(cos(lngRef*CV_PI/180)));
+	
 	t.at<float>(0,0) = xEast;
 	
 	yNorth = (-cos(lngRef*CV_PI/180)*sin(latRef*CV_PI/180)*(xECEF-x0)) - 
@@ -97,20 +112,16 @@ Mat AbsolutePose::lla2ENU(double &inpLat, double &inpLong, double &inpAlt)
 			(sin(latRef*CV_PI/180)*(zECEF-z0));
 	t.at<float>(2,0) = zUp;
 
-	//return Vec3f (xEast, yNorth, zUp);
 	return t;
 }
 
-Mat AbsolutePose::abs_rot(	double &phi, 	/* roll */
-							double &theta, 	/* pitch */
-							double &psi		/* yaw */)
-
+Mat AbsolutePose::abs_rot(double &phi, double &theta, double &psi)
 {
-	Mat R(3,3,CV_32F);
+	Mat R(3 , 3, CV_32F);
 	
-	Mat R_x(3,3,CV_32F);
-	Mat R_y(3,3,CV_32F);
-	Mat R_z(3,3,CV_32F);
+	Mat R_x(3, 3, CV_32F);
+	Mat R_y(3, 3, CV_32F);
+	Mat R_z(3, 3, CV_32F);
 	
 	// rotation along x-axis (roll - phi) ccw+
 	R_x.at<float>(0,0) = 1.0;

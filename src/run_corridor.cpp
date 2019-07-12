@@ -15,55 +15,6 @@
 using namespace std;
 using namespace cv;
 
-struct Angle { vector<double> roll, pitch, heading;};
-struct Geodesy {vector<double> lat, lng, alt;};
-
-void load_GNSS_INS(const string &file_path, 
-					vector<double> &gpsTime, 
-					Angle &angle, Geodesy &geodecy)
-{
-	ifstream csvFile;
-	csvFile.open(file_path.c_str());
-
-	if (!csvFile.is_open())
-	{
-		cout << "Wrong Path!!!!" << endl;
-		exit(EXIT_FAILURE);
-	}
-	string line;
-	vector <string> vec;
-	getline(csvFile, line); // skip the 1st line (header)
-
-    while (getline(csvFile,line))
-    {
-        if (line.empty()) // skip empty lines:
-        {
-            //cout << "empty line!" << endl;
-            continue;
-        }
-
-        istringstream iss(line);
-        string lineStream;
-        string::size_type sz;
-
-		vector <double> lineGNSS_INS;
-
-		while (getline(iss, lineStream, ','))
-		{
-			lineGNSS_INS.push_back(stold(lineStream,&sz)); // convert to double
-			//lineGNSS_INS.push_back(stof(lineStream,&sz)); // convert to float
-		}
-		gpsTime.push_back(lineGNSS_INS[0]);
-		geodecy.lat.push_back(lineGNSS_INS[3]);
-		geodecy.lng.push_back(lineGNSS_INS[4]);
-		geodecy.alt.push_back(lineGNSS_INS[5]);
-
-		angle.roll.push_back(lineGNSS_INS[8]);
-		angle.pitch.push_back(lineGNSS_INS[7]);
-		angle.heading.push_back(lineGNSS_INS[6]);
-    }
-}
-
 void LoadImages(const string &path, 
 				vector<string> &imgName, 
 				vector<double> &vTimestamps)
@@ -111,22 +62,44 @@ int main( int argc, char** argv )
 		return -1; 
 	}
 
-	string imgFile = string(argv[1])+"frames/rgb.txt"; // open rgb.txt from the img folder
+	Mat I_3x3 = Mat::eye(3, 3, CV_64F);
+	Mat I_4x4 = Mat::eye(4, 4, CV_64F);
 	
+	Mat Z_3x1 = Mat::zeros(3, 1, CV_64F);
+	
+	string imgFile = string(argv[1])+"frames/rgb.txt"; // open rgb.txt from the img folder
+
+	// import image files:
 	vector<double> vTimestamps;		// retrieve ts 
 	vector<string> imgName; 		// retrieve img file names ex: rgb/frame_145.jpg
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
+	// improt ground truth:
+	vector<Mat> T_GT;
+	vector<double> scale_GT;
+	for(int i = 0; i < nImages; i++)
+	{
+		T_GT.push_back(I_4x4.clone());
+	}
 
+	scale_GT.push_back(1);
+	for(int i = 0; i < nImages - 1; i++)
+	{
+		scale_GT.push_back(1);
+	}
     float frame_scale 	= 1.0f;
-    int window_sz_BM 	= 35;
+    int window_sz_BM 	= 11.0;
     float ssd_th 		= 25.0f;
     float ssd_ratio_th	= 0.4f;
-	size_t MIN_NUM_FEAT = 8;
+	size_t MIN_NUM_FEAT = 8.0;
+    float MIN_GT_SCALE 	= 0.1f;
+    
+    Mat T_gt = Mat::eye(4, 4, CV_64F);
 	
 	ORB_VISLAM::System mySLAM(argv[2], frame_scale, 
-								window_sz_BM, ssd_th, ssd_ratio_th, MIN_NUM_FEAT);
+								window_sz_BM, ssd_th, ssd_ratio_th, 
+								MIN_NUM_FEAT, MIN_GT_SCALE);
 	
 	vector<size_t> keyIMG;
 	
@@ -140,26 +113,32 @@ int main( int argc, char** argv )
 	cout 	<< "\nMatching process of " 		<< keyIMG.size() 
 			<< " frames out of " << nImages 	<< " frames ..." 
 			<< endl;
+
+	string vo_file 		= string(argv[1])	+ "VO.txt";
+	string loc_vo_file 	= string(argv[1])	+ "VO_loc.txt";
 	
-	string vo_file 		= string(argv[1])	+ "frames/VO.txt";
-	string homog_file 	= string(argv[1])	+ "frames/Homography_Matrix.txt";
-	string ess_mat_file = string(argv[1])	+ "frames/Essential_Matrix.txt";
+	string gt_file 		= string(argv[1])	+ "T_GT.txt";
+	string rvec_file 	= string(argv[1])	+ "rvec_GT.txt";
 	
-	ofstream f_vo, f_homography, f_essential_matrix;	
+	
+	ofstream f_vo, f_gt, f_rvec_abs, vo_loc;
 	
 	f_vo.open(vo_file.c_str());
-	f_homography.open(homog_file.c_str());
-	f_essential_matrix.open(ess_mat_file.c_str());
+	f_gt.open(gt_file.c_str());
+	f_rvec_abs.open(rvec_file.c_str());
+	vo_loc.open(loc_vo_file.c_str());
 	
 	f_vo << fixed;
-	f_vo << "matches12,matches21,matchesCCM,sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz" << endl;
+	f_vo << "sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,E_rvec_x,E_rvec_y,E_rvec_z,E_R00,E_R01,E_R02,E_tx,E_R10,E_R11,E_R12,E_ty,E_R20,E_R21,E_R22,E_tz" << endl;
 
-	f_essential_matrix << fixed;
-	f_essential_matrix << "E_00,E_01,E_02,E_10,E_11,E_12,E_20,E_21,E_22" << endl;
+	f_gt << fixed;
+	f_gt << "T_00,T_01,T_02,T_03,T_10,T_11,T_12,T_13,T_20,T_21,T_22,T_23,T_30,T_31,T_32,T_33" << endl;
 
-	f_homography << fixed;
-	f_homography << "H_00,H_01,H_02,H_10,H_11,H_12,H_20,H_21,H_22" << endl;
+	f_rvec_abs << fixed;
+	f_rvec_abs << "rvec_x,rvec_y,rvec_z" << endl;
 
+	vo_loc << fixed;
+	vo_loc << "sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,E_rvec_x,E_rvec_y,E_rvec_z,E_R00,E_R01,E_R02,E_tx,E_R10,E_R11,E_R12,E_ty,E_R20,E_R21,E_R22,E_tz" << endl;
 
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
@@ -182,8 +161,8 @@ int main( int argc, char** argv )
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
 		
-		mySLAM.run(img, frame_name, f_vo, f_homography, f_essential_matrix);
-		
+		mySLAM.run(img, frame_name, f_vo, f_gt, f_rvec_abs, vo_loc, 
+					T_GT[keyIMG[ni]], scale_GT[keyIMG[ni]]);
 	}
 	clock_t tEnd = clock();
     

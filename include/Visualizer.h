@@ -8,6 +8,13 @@
 #include <opencv2/calib3d.hpp>
 #include <pangolin/pangolin.h>
 
+
+#include <pcl/common/common_headers.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/visualization/pcl_visualizer.h>
+
 #include <opencv2/core/eigen.hpp>
 #include <stdio.h>      /* printf, fopen */
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
@@ -18,23 +25,11 @@ namespace ORB_VISLAM
 	class Visualizer
 	{
 		public:
-			// ##################### 4 soultions ##################### //
-			Visualizer(cv::Mat &im, cv::Mat T_GT, cv::Mat T_cam, 
-						int fps, float scale, bool &frame_avl);
-			Visualizer(cv::Mat &im, cv::Mat T_GT, 
+			Visualizer(cv::Mat &im, cv::Mat &T_GT, 	 cv::Mat &T_cam_E,
 									cv::Mat T_cam_0, cv::Mat T_cam_1, 
 									cv::Mat T_cam_2, cv::Mat T_cam_3, 
-									int fps, float scale, bool &frame_avl);
-			// ##################### 4 soultions ##################### //
-						
-			
-			// ##################### 1 soultions ##################### //
-			Visualizer(cv::Mat &im, cv::Mat T_cam, 
-						int fps, float scale, bool &frame_avl);
-			Visualizer(cv::Mat &im, cv::Mat T_cam_0, cv::Mat T_cam_1, 
-									cv::Mat T_cam_2, cv::Mat T_cam_3, 
-									int fps, float scale, bool &frame_avl);
-			// ##################### 1 soultions ##################### //
+									int fps, float scale, bool &frame_avl,
+									pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud);
 			
 			struct Triplet;
 			void draw_wrd_axis();
@@ -55,17 +50,18 @@ namespace ORB_VISLAM
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
 						std::vector<std::pair<int,int>> &matches,
+						std::vector<cv::Point3f> &map_3D,
 						std::string &frame_name);
 						
 			
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
-			std::string frameWinName = "frames";
+			//std::string frameWinName = "frames";
+			cv::Mat vTgt, vTcam_E, vTcam_0, vTcam_1, vTcam_2, vTcam_3;
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr vCloud;
 			
-			cv::Mat vTgt, vTcam;
-			cv::Mat vTcam_0, vTcam_1, vTcam_2, vTcam_3;
-			
+			std::vector<cv::Point3f> mapPoints;
 			
 			std::mutex visualizerMutex;
 			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
@@ -74,15 +70,14 @@ namespace ORB_VISLAM
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
-
+			void draw_map_points();
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);
 			void draw_matches(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp,
 								std::vector<std::pair<int,int>> &matches);
 			
 			void openCV_();
 			void openGL_();
-			
-			
+			void PCL_();
 	};
 
 }// namespace ORB_VISLAM

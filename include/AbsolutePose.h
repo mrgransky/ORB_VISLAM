@@ -20,24 +20,28 @@ namespace ORB_VISLAM
 	{
 		public:
 			AbsolutePose(double &ref_lat, double &ref_lng, double &ref_alt);
-			cv::Mat lla2ENU(double &inpLat, double &inpLong, double &inpAlt);
-			cv::Mat abs_rot(	double &phi, 	/* roll */
-								double &theta, 	/* pitch */
-								double &psi		/* yaw */);
+			
+			AbsolutePose();
 					
 			void calcPose( 	double &lat, double &lng, double &alt, 
 							double &roll, double &pitch, double &heading);
 			
+			void set(cv::Mat &T_GT);
 			
+			cv::Mat T_abs;
+			cv::Mat rvec_abs;
+			float AbsScale;
+		private:
+			cv::Mat tprev;
 			const int earth_rad = 6378137;
 			const double f_inv = 298.257224f;
 			const double f = 1.0 / f_inv;
-			
-			cv::Mat T_abs = cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat rvec_GT;
-		private:
 			double latRef, lngRef, altRef;
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_);
+			cv::Mat lla2ENU(double &inpLat, double &inpLong, double &inpAlt);
+			cv::Mat abs_rot(double &phi, double &theta, double &psi);
+			void calcRotation(cv::Mat &T);
+			void getScale(cv::Mat &t_);
 	};
 }// namespace ORB_VISLAM
 

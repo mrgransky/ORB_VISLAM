@@ -1,132 +1,34 @@
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <pangolin/pangolin.h>
-
-#include <opencv2/core/eigen.hpp>
-#include <stdio.h>      /* printf, fopen */
-#include <stdlib.h>     /* exit, EXIT_FAILURE */
-#include <thread>
 #include "Visualizer.h"
 
 
 using namespace std;
 using namespace cv;
 
+using namespace pcl;
+using namespace pcl::io;
+using namespace pcl::visualization;
 namespace ORB_VISLAM
 {
 
-// all four solutions:
-Visualizer::Visualizer(Mat &im, Mat T_cam_0, Mat T_cam_1, 
-								Mat T_cam_2, Mat T_cam_3, 
-								int fps, float scale, bool &frame_avl)
-{
-	cout << "" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER V: 4 solutions"											<< endl;
-	cout << "#########################################################################" << endl;
-	
-	vTcam 		= Mat::eye(4, 4, CV_32F);
-	
-	vTcam_0 	= T_cam_0;
-	vTcam_1 	= T_cam_1;
-	vTcam_2 	= T_cam_2;
-	vTcam_3 	= T_cam_3;
-	
-	// TODO: Ground Truth must be added!
-	vTgt 	= Mat::eye(4, 4, CV_32F);
-	
-	vFPS 	= fps;
-	vScale	= scale;
-	
-	hasFrame = frame_avl;
-	
-	vImg_W = im.cols;
-	vImg_H = im.rows;
-	
-	vImgScaled_W = vImg_W * scale;
-	vImgScaled_H = vImg_H * scale;
-	
-	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-}
-
-Visualizer::Visualizer(Mat &im, Mat T_GT, 
+Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 								Mat T_cam_0, Mat T_cam_1, 
 								Mat T_cam_2, Mat T_cam_3,
-								int fps, float scale, bool &frame_avl)
+								int fps, float scale, bool &frame_avl,
+								PointCloud<PointXYZRGB>::Ptr &cloud)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER VI 4 camera solution"										<< endl;
+	cout << "\t\t\tVISUALIZER"															<< endl;
 	cout << "#########################################################################" << endl;
 
 	vTgt 		= T_GT;
-	vTcam 		= Mat::eye(4, 4, CV_32F);
+		
+	vTcam_E 	= T_cam_E;
 	vTcam_0 	= T_cam_0;
 	vTcam_1 	= T_cam_1;
 	vTcam_2 	= T_cam_2;
 	vTcam_3 	= T_cam_3;
-	
-	vFPS 	= fps;
-	vScale	= scale;
-	
-	hasFrame = frame_avl;
-	
-	vImg_W = im.cols;
-	vImg_H = im.rows;
-	
-	vImgScaled_W = vImg_W * vScale;
-	vImgScaled_H = vImg_H * vScale;
-			
-	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-}
-
-
-Visualizer::Visualizer(Mat &im, Mat T_cam, int fps, float scale, bool &frame_avl)
-{
-	cout << "" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER V 1 camera solution"										<< endl;
-	cout << "#########################################################################" << endl;
-	
-	// TODO: Ground Truth must be added!
-	vTgt 		= Mat::eye(4, 4, CV_32F);
-	
-	vTcam 		= T_cam;
-	vTcam_0 	= Mat::eye(4, 4, CV_32F);
-	vTcam_1 	= Mat::eye(4, 4, CV_32F);
-	vTcam_2 	= Mat::eye(4, 4, CV_32F);
-	vTcam_3 	= Mat::eye(4, 4, CV_32F);
-	
-	vFPS 	= fps;
-	vScale	= scale;
-	
-	hasFrame = frame_avl;
-	
-	vImg_W = im.cols;
-	vImg_H = im.rows;
-	
-	vImgScaled_W = vImg_W * scale;
-	vImgScaled_H = vImg_H * scale;
-	
-	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
-}
-
-Visualizer::Visualizer(Mat &im, Mat T_GT, Mat T_cam, int fps, float scale, bool &frame_avl)
-{
-	cout << "" << endl;
-	cout << "#########################################################################" << endl;
-	cout << "\t\t\tVISUALIZER VI 1 camera solution"										<< endl;
-	cout << "#########################################################################" << endl;
-
-	vTgt 		= T_GT;
-	vTcam 		= T_cam;
-	vTcam_0 	= Mat::eye(4, 4, CV_32F);
-	vTcam_1 	= Mat::eye(4, 4, CV_32F);
-	vTcam_2 	= Mat::eye(4, 4, CV_32F);
-	vTcam_3 	= Mat::eye(4, 4, CV_32F);
+	vCloud		= cloud;
 	
 	vFPS 	= fps;
 	vScale	= scale;
@@ -195,6 +97,7 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 void Visualizer::show(Mat &frame, 
 			vector<KeyPoint> &kp, 
 			vector<pair<int,int>> &matches,
+			vector<Point3f> &map_3D,
 			string &frame_name)
 {
 	vImg 		= frame;
@@ -215,6 +118,8 @@ void Visualizer::show(Mat &frame,
 	draw_KP(vImgScaled, kp);
 	draw_matches(vImgScaled, kp, matches);
 	
+	mapPoints	 = map_3D;
+	
 	cv::putText(vImgScaled, s_imgR.str(),
 				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
     			cv::FONT_HERSHEY_PLAIN, 1, Scalar::all(255), 2, LINE_4);
@@ -228,19 +133,48 @@ void Visualizer::show(Mat &frame,
 	vKP_ref		= kp;
 }
 
+void Visualizer::run()
+{
+
+	thread t1(&Visualizer::openCV_, this);
+	thread t2(&Visualizer::openGL_, this);
+	//thread t3(&Visualizer::PCL_, this);
+	
+
+	t1.join();
+	t2.join();
+	//t3.join();
+}
+
+void Visualizer::PCL_()
+{
+	// visualization
+	PCLVisualizer viz ("Point Cloud");
+	viz.setBackgroundColor(0,0,0);
+	
+	// original cloud -> blue
+	PointCloudColorHandlerCustom<PointXYZRGB> originalCloudColor(vCloud, 0, 0, 250);
+	viz.addPointCloud<PointXYZRGB>(vCloud, originalCloudColor, "originalPointCloud");
+	
+	viz.addText("Point Cloud", 30, 50, 16, 0, 0, 150);
+	
+	while (!viz.wasStopped())
+	{
+		viz.spinOnce();
+	}
+}
+
 void Visualizer::openCV_()
 {
+	
+	std::string frameWinName = "frames";
 	if(!vImg.empty())
 	{	
 		while(hasFrame)
 		{	
 			imshow(frameWinName, vImgScaled);
 			waitKey(vFPS);
-
-			//waitKey(0);
 		}
-		//destroyWindow(frameWinName);
-		cout << "while opencv ended!" << endl;
 	}
 	else
 	{
@@ -251,16 +185,18 @@ void Visualizer::openCV_()
 void Visualizer::openGL_()
 {
 	float width 	= 1600;
-    float heigth 	= 500;
+    float heigth 	= 900;
     
     pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
+    
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(width, heigth, 500, 500, .9*width, .1*heigth, .2, 100),
-        pangolin::ModelViewLookAt(0,0,1, 0,0,0, pangolin::AxisY)
+        pangolin::ProjectionMatrix(width, heigth, 220, 220, .3*width, .5*heigth, .2, 100),
+        pangolin::ModelViewLookAt(0,5,0, 0,0,0, pangolin::AxisZ)
+        //pangolin::ModelViewLookAt(-0.8,0.5,-0.5, 0,0,0, pangolin::AxisY)
         //pangolin::ModelViewLookAt(0,-1,0,0,0,0, 0,0,1) // equivalent
     );
 
@@ -278,10 +214,8 @@ void Visualizer::openGL_()
 	vector<Triplet> vertices_gt;
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
-	
-
+	vector<Triplet>	vertices_cam_Ess;
 	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
-	
 	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
 	{
@@ -289,11 +223,10 @@ void Visualizer::openGL_()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
 		d_cam.Activate(s_cam);
-		glClearColor(1,1,1,1);
-		
-		
+		glClearColor(1,1,1,0);
 		draw_wrd_axis();
 		
+		draw_map_points();
 		
 		// ############ Draw GROUND TRUTH ############
 		Triplet current_gt_pt;
@@ -303,7 +236,7 @@ void Visualizer::openGL_()
 		{
 			KeyFrames.push_back(pT_gt);
 		}
-		draw(pT_gt,.1,.18,.1);
+		draw(pT_gt,0, .58, .16);
 		//draw_KF(KeyFrames);	
 		
 		//s_cam.Follow(pT_gt);
@@ -314,138 +247,103 @@ void Visualizer::openGL_()
 		
 		vertices_gt.push_back(current_gt_pt);
 		
-		draw_path(vertices_gt, .84, .83, .1);
+		draw_path(vertices_gt, .1, .3, .98);
 		
 		counter_KF++;
 		// ############ Draw GROUND TRUTH ############
 		
 		
-		
-		
+		// ############ Homography Matrix solution ############
 		Triplet current_cam_pt_0, current_cam_pt_1, current_cam_pt_2, current_cam_pt_3;
-		// ############ 4 solutions ############
+		
 		pangolin::OpenGlMatrix pTc_0;
 		pTc_0.SetIdentity();
 		pTc_0 	= getCurrentPose(vTcam_0);
-		draw(pTc_0, .01,.01,.92); // blue
-		
-		// camera:
+		draw(pTc_0,.91,.02,.01); // red
+		//s_cam.Follow(pTc_0);
 		current_cam_pt_0.x = vTcam_0.at<float>(0,3);
 		current_cam_pt_0.y = vTcam_0.at<float>(1,3);
 		current_cam_pt_0.z = vTcam_0.at<float>(2,3);
 		vertices_cam_0.push_back(current_cam_pt_0);
-		
-		draw_path(vertices_cam_0, .15, .72, .01);
+		draw_path(vertices_cam_0, .2,.2,.2);
 		
 		pangolin::OpenGlMatrix pTc_1;
 		pTc_1.SetIdentity();
-		
 		pTc_1 	= getCurrentPose(vTcam_1);
-
-		draw(pTc_1, .08,.84,.02); // green
-		
-		// camera:
+		draw(pTc_1, .08,.84,.2); // green
 		current_cam_pt_1.x = vTcam_1.at<float>(0,3);
 		current_cam_pt_1.y = vTcam_1.at<float>(1,3);
 		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
 		vertices_cam_1.push_back(current_cam_pt_1);
-		
-		draw_path(vertices_cam_1, .852,.858,.801);
-		
+		draw_path(vertices_cam_1, .6, .2, .81);
+	
+	
 		pangolin::OpenGlMatrix pTc_2;
 		pTc_2.SetIdentity();
-		
 		pTc_2 	= getCurrentPose(vTcam_2);
-
 		draw(pTc_2, .01, .01, .01); // black
-		
-		// camera:
 		current_cam_pt_2.x = vTcam_2.at<float>(0,3);
 		current_cam_pt_2.y = vTcam_2.at<float>(1,3);
 		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
 		vertices_cam_2.push_back(current_cam_pt_2);
-		
 		draw_path(vertices_cam_2, .95,.03, .01);
+		
 		
 		pangolin::OpenGlMatrix pTc_3;
 		pTc_3.SetIdentity();
-	
 		pTc_3 	= getCurrentPose(vTcam_3);
-	
-		draw(pTc_3,.91,.02,.01); // red
-		
-		// camera:
+		draw(pTc_3, .01,.01,.92); // blue
 		current_cam_pt_3.x = vTcam_3.at<float>(0,3);
 		current_cam_pt_3.y = vTcam_3.at<float>(1,3);
 		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
 		vertices_cam_3.push_back(current_cam_pt_3);
+		draw_path(vertices_cam_3, .09,.91, .61);
+		// ############ Homography Matrix solution ############
 		
-		draw_path(vertices_cam_3, .9,.91, .51);
-		// ############ 4 solutions ############
 		
-		
-		// ############ 1 solution ############
-		// camera in World Coordinate:
-		Triplet current_cam_pt;
-		pangolin::OpenGlMatrix pTc;
-		pTc.SetIdentity();
-		vector<Triplet>	vertices_cam;
+		// ############ Essential Matrix solution ############
+		Triplet current_cam_pt_E;
+		pangolin::OpenGlMatrix pTc_Ess;
+		pTc_Ess.SetIdentity();
 
-		pTc 	= getCurrentPose(vTcam);
-		draw(pTc, .8, 0, 0);
+		pTc_Ess 	= getCurrentPose(vTcam_E);
+		draw(pTc_Ess, 0.95, 0, 0.7);	// pink
 	
 		// camera:
-		current_cam_pt.x = vTcam.at<float>(0,3);
-		current_cam_pt.y = vTcam.at<float>(1,3);
-		current_cam_pt.z = vTcam.at<float>(2,3);
-		vertices_cam.push_back(current_cam_pt);
+		current_cam_pt_E.x = vTcam_E.at<float>(0,3);
+		current_cam_pt_E.y = vTcam_E.at<float>(1,3);
+		current_cam_pt_E.z = vTcam_E.at<float>(2,3);
+		vertices_cam_Ess.push_back(current_cam_pt_E);
 		
-		draw_path(vertices_cam, .12,.18,.8);
-		// ############ 4 solutions ############
+		draw_path(vertices_cam_Ess, .8,.6,.08);
+		// ############ Essential Matrix solution ############
 		
 		pangolin::FinishFrame();
 	}
-}
-
-void Visualizer::run()
-{
-
-	thread t1(&Visualizer::openCV_, this);
-	thread t2(&Visualizer::openGL_, this);
-
-	t1.join();
-	t2.join();
 }
 
 pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)
 {
 	pangolin::OpenGlMatrix curPose;
 	
-	Mat R(3,3,CV_32F);
-	Mat t(3,1,CV_32F);
-	
-	R = T.rowRange(0,3).colRange(0,3);
-	t = T.rowRange(0,3).col(3);
-	
-		
-	curPose.m[0]  = R.at<float>(0,0);
-	curPose.m[1]  = R.at<float>(1,0);
-	curPose.m[2]  = R.at<float>(2,0);
+	curPose.m[0]  = T.at<float>(0,0);
+	curPose.m[1]  = T.at<float>(1,0);
+	curPose.m[2]  = T.at<float>(2,0);
 	curPose.m[3]  = 0.0;
 	
-	curPose.m[4]  = R.at<float>(0,1);
-	curPose.m[5]  = R.at<float>(1,1);
-	curPose.m[6]  = R.at<float>(2,1);
+	curPose.m[4]  = T.at<float>(0,1);
+	curPose.m[5]  = T.at<float>(1,1);
+	curPose.m[6]  = T.at<float>(2,1);
 	curPose.m[7]  = 0.0;
 
-	curPose.m[8]  = R.at<float>(0,2);
-	curPose.m[9]  = R.at<float>(1,2);
-	curPose.m[10] = R.at<float>(2,2);
+	curPose.m[8]  = T.at<float>(0,2);
+	curPose.m[9]  = T.at<float>(1,2);
+	curPose.m[10] = T.at<float>(2,2);
 	curPose.m[11] = 0.0;
 
-	curPose.m[12] = t.at<float>(0);
-	curPose.m[13] = t.at<float>(1);
-	curPose.m[14] = t.at<float>(2);
+	curPose.m[12] = T.at<float>(3,0);
+	curPose.m[13] = T.at<float>(3,1);
+	curPose.m[14] = T.at<float>(3,2);
 	curPose.m[15] = 1.0;
 	
 	return curPose;
@@ -515,7 +413,6 @@ void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
 	glLineWidth(.8);
 	glBegin(GL_LINES);
 	
-
 	for (size_t i = 0; i < KeyFrames.size(); i++)
 	{
 		glPushMatrix();
@@ -582,7 +479,7 @@ void Visualizer::draw(pangolin::OpenGlMatrix &T, float r, float g, float b)
 		glMultMatrixd(T.m);
 #endif
 
-    const float w = .02;
+    const float w = .5;
     const float h = w*0.7;
     const float z = w*0.5;
 
@@ -624,4 +521,40 @@ void Visualizer::draw(pangolin::OpenGlMatrix &T, float r, float g, float b)
     glFlush();
     glPopMatrix();
 }
+
+void Visualizer::draw_map_points()
+{
+	if(mapPoints.empty())
+	{
+		cout << "No Map Points..." << endl;
+		return;
+	}
+	cout << "Map Points size [draw_map_points] =\t" << mapPoints.size() << endl;
+
+	float mPointSize = 1.2f;
+	glPointSize(mPointSize);
+	glColor3f(0,0,0);
+	glBegin(GL_POINTS);
+	cout << "B4 for loop!" << endl;
+	for(size_t i = 0; i < mapPoints.size(); i++)
+	{
+		float x = mapPoints[i].x;
+		float y = mapPoints[i].y;
+		float z = mapPoints[i].z;
+		
+		
+		/*cout 	<< "Map Points[" 	<< i 
+				<< "] = \t" 		<< mapPoints[i].x 
+				<< " , "			<< mapPoints[i].y 
+				<< " , "			<< mapPoints[i].z 
+				<< endl;*/
+		glVertex3f(x, y, z);
+	}
+    cout << "\n\nMap Points DONE!\n" << endl;
+	
+	
+	glEnd();
+    glFlush();
+}
+
 }

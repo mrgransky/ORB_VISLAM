@@ -38,14 +38,19 @@ find_package(Eigen3 REQUIRED)
 find_package(Pangolin 0.4 REQUIRED)
 find_package(OpenGL 2.0)
 find_package(GLUT REQUIRED)
+find_package(PCL 1.2 REQUIRED)
 
 include_directories( include
+						${PCL_INCLUDE_DIRS}
 						${OPENGL_INCLUDE_DIRS} 
 						${GLUT_INCLUDE_DIRS} 
 						${Pangolin_INCLUDE_DIRS}
 						${EIGEN3_INCLUDE_DIR})
 set(LIBS 
 ${OpenCV_LIBS} 
+${PCL_COMMON_LIBRARIES}
+${PCL_IO_LIBRARIES}
+${PCL_LIBRARIES}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${OPENGL_LIBRARIES}
@@ -54,24 +59,6 @@ ${GLUT_LIBRARY}
 -lGLU 
 -lGL
 )
-
-add_executable(${PROJECT_NAME}_civit 
-				src/run_civit.cpp
-				src/System.cpp
-				src/AbsolutePose.cpp
-				src/Vision.cpp
-				src/Visualizer.cpp
-				)
-target_link_libraries(${PROJECT_NAME}_civit ${LIBS})
-
-add_executable(${PROJECT_NAME}_corridor 
-				src/run_corridor.cpp
-				src/System.cpp
-				src/AbsolutePose.cpp
-				src/Vision.cpp
-				src/Visualizer.cpp
-				)
-target_link_libraries(${PROJECT_NAME}_corridor ${LIBS})
 
 add_executable(${PROJECT_NAME}_kitti 
 				src/run_kitti.cpp
