@@ -9,6 +9,7 @@
 #include <pangolin/pangolin.h>
 
 
+
 #include <pcl/common/common_headers.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -29,10 +30,9 @@ namespace ORB_VISLAM
 									cv::Mat T_cam_0, cv::Mat T_cam_1, 
 									cv::Mat T_cam_2, cv::Mat T_cam_3, 
 									int fps, float scale, bool &frame_avl,
-									pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud);
+									pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 			
 			struct Triplet;
-			void draw_wrd_axis();
 			void run();
 			
 			cv::Mat vImg 	= cv::Mat::zeros(640, 480, CV_8UC3);
@@ -43,26 +43,24 @@ namespace ORB_VISLAM
 			
 			
 			cv::Mat vImgScaled = cv::Mat::zeros(640, 480, CV_8UC3);
-			
-			//void show(cv::Mat &frame, std::string &frame_name, int fps);
 			std::vector<cv::KeyPoint> vKP_ref;
 
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
 						std::vector<std::pair<int,int>> &matches,
-						std::vector<cv::Point3f> &map_3D,
+						cv::Mat &matrix_3d,
 						std::string &frame_name);
 						
 			
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
-			//std::string frameWinName = "frames";
 			cv::Mat vTgt, vTcam_E, vTcam_0, vTcam_1, vTcam_2, vTcam_3;
-			pcl::PointCloud<pcl::PointXYZRGB>::Ptr vCloud;
-			
-			std::vector<cv::Point3f> mapPoints;
-			
+			cv::Mat vPT3D, gPT3D;
+			pcl::PointCloud<pcl::PointXYZ>::Ptr vCloud;
+			std::vector<cv::Mat> vMAT, vMap;
+			void getGlobalPTs3D(cv::Mat &loc, cv::Mat &glob);
+
 			std::mutex visualizerMutex;
 			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
 			float vScale;
@@ -70,11 +68,16 @@ namespace ORB_VISLAM
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
-			void draw_map_points();
+			void drawPC(std::vector<cv::Mat> &pcVec);
+			void drawPC();
+			
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);
 			void draw_matches(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp,
 								std::vector<std::pair<int,int>> &matches);
+			void draw_dummy();
+			void gen_dummy();
 			
+			void drawWRLD();
 			void openCV_();
 			void openGL_();
 			void PCL_();

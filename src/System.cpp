@@ -20,6 +20,7 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	
 	frame_avl = true;
 	
+	sCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 	
 	absPosePtr 		= new AbsolutePose();
 	// init vision class:
@@ -52,6 +53,7 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	cout << "\t\t\t\tSYSTEN VI"															<< endl;
 	cout << "#########################################################################" << endl;
 	frame_avl = true;
+	sCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 	// initialize absPose class:
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
@@ -82,20 +84,24 @@ void System::run(Mat &raw_frame, string &frame_name,
 					ofstream &file_gt,
 					ofstream &file_rvec_abs,
 					ofstream &file_vo_loc,
-					Mat &T_GT, double &scale_GT)
+					ofstream &file_pc,
+					Mat &T_GT, float &scale_GT)
 {
-	vector<pair<int,int>> matches;
 	vector<KeyPoint> KP;
-	vector<Point3f> map_points;
+	vector<pair<int,int>> matches;
 	visionPtr->sc = scale_GT;
-	//visionPtr->sc = 1.0;
-	
-	visionPtr->Analyze(raw_frame, KP, matches, map_points);
-	visualizerPtr->show(raw_frame, KP, matches, map_points, frame_name);
+	//visionPtr->sc = 1.0;	
+
+	visionPtr->Analyze(raw_frame, KP, matches);
+	visualizerPtr->show(raw_frame, KP, matches, visionPtr->visionMap, frame_name);
 	
 	absPosePtr->set(T_GT);
 	saveMatrix(T_GT, file_gt);
 	saveMatrix(absPosePtr->rvec_abs, file_rvec_abs);
+	
+	
+	//save3Dpoints(sMap, file_pc);
+	//savePointCloud(sMap, string("cloud.pcd"));
 	
 	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
 				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
@@ -120,17 +126,16 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 					ofstream &file_rvec_abs,
 					ofstream &file_vo_loc)
 {
+	vector<KeyPoint> KP;	
 	vector<pair<int,int>> matches;
-	vector<KeyPoint> KP;
-	vector<Point3f> map_points;
 	
-	visionPtr->Analyze(raw_frame, KP, matches, map_points);
-	visualizerPtr->show(raw_frame, KP, matches, visionPtr->map_3D, frame_name);
+	visionPtr->Analyze(raw_frame, KP, matches);
+	visualizerPtr->show(raw_frame, KP, matches, visionPtr->visionMap, frame_name);
+	
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
 	
 	visionPtr->sc = absPosePtr->AbsScale;
 	//visionPtr->sc = 1.0;
-	
 	
 	saveMatrix(absPosePtr->T_abs, file_gt);
 	saveMatrix(absPosePtr->rvec_abs, file_rvec_abs);
@@ -150,47 +155,49 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 				file_vo);
 }
 
-void System::save3Dpoints(ofstream &file_)
+void System::save3Dpoints(vector<Mat> &p3ds, ofstream &file_)
 {
-	for(size_t i = 0; i < visionPtr->map_3D.size(); i++)
+	cout << "sMap sz =\t" << p3ds.size() << endl;
+	for(size_t i = 0; i < p3ds.size(); i++)
 	{
-		file_	<< visionPtr->map_3D[i].x 	<< ","
-				<< visionPtr->map_3D[i].y 	<< ","
-				<< visionPtr->map_3D[i].z 	<< endl;
+		file_	<< p3ds[i].at<float>(0) 	<< ","
+				<< p3ds[i].at<float>(1) 	<< ","
+				<< p3ds[i].at<float>(2) 	<< endl;
 	}
 }
 
-void System::savePointCloud()
+void System::savePointCloud(vector<Mat> &p3ds, string fname_)
 {
-	for(size_t i = 0; i < visionPtr->map_3D.size(); i++)
+	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr sCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+	for(size_t i = 0; i < p3ds.size(); i++)
 	{
-		uint8_t red 	= rand() * 255;
-		uint8_t green 	= rand() * 255;
-		uint8_t blue 	= rand() * 255;
 		pcl::PointXYZRGB p;
-		
-		p.x = visionPtr->map_3D[i].x;
-		p.y = visionPtr->map_3D[i].y;
-		p.z = visionPtr->map_3D[i].z;
+		uint8_t red 	= 200;
+		uint8_t green 	= 200;
+		uint8_t blue 	= 200;
+
+		p.x = p3ds[i].at<float>(0);
+		p.y = p3ds[i].at<float>(1);
+		p.z = p3ds[i].at<float>(2);
 		
 		p.r = red;
 		p.g = green;
 		p.b = blue;
-		visionPtr->cloud->push_back(p);
+		
+		sCloud->push_back(p);
 	}
 
-	cout 	<< "cloud [w,h,sz] =\t" << visionPtr->cloud->width 
-			<< " , "				<< visionPtr->cloud->height 
-			<< " , " 				<< visionPtr->cloud->size()
-			<< endl;
-			
-	if (visionPtr->cloud->size() != 0)
+	if (sCloud->size() != 0)
 	{
-		savePCDFileASCII("Point_Cloud.pcd", *visionPtr->cloud);
+		cout 	<< "cloud [w,h,sz] =\t" << sCloud->width 
+				<< " , "				<< sCloud->height 
+				<< " , " 				<< sCloud->size()
+				<< endl;
+		savePCDFileASCII(fname_, *sCloud);
 	}
 	else
 	{
-		cout << "\nNO Point Cloud saved...\n" << endl;
+		cout << "\nNO Point Cloud saved!\n" << endl;
 	}
 }
 

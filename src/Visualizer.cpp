@@ -14,7 +14,7 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 								Mat T_cam_0, Mat T_cam_1, 
 								Mat T_cam_2, Mat T_cam_3,
 								int fps, float scale, bool &frame_avl,
-								PointCloud<PointXYZRGB>::Ptr &cloud)
+								PointCloud<PointXYZ>::Ptr &cloud)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;
@@ -29,6 +29,8 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 	vTcam_2 	= T_cam_2;
 	vTcam_3 	= T_cam_3;
 	vCloud		= cloud;
+	
+	
 	
 	vFPS 	= fps;
 	vScale	= scale;
@@ -97,7 +99,7 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 void Visualizer::show(Mat &frame, 
 			vector<KeyPoint> &kp, 
 			vector<pair<int,int>> &matches,
-			vector<Point3f> &map_3D,
+			Mat &matrix_3d,
 			string &frame_name)
 {
 	vImg 		= frame;
@@ -115,10 +117,19 @@ void Visualizer::show(Mat &frame,
 	s_img 	<< vImg_name;
 	s_imgR 	<< vImgR_name;
 	
+	
 	draw_KP(vImgScaled, kp);
 	draw_matches(vImgScaled, kp, matches);
 	
-	mapPoints	 = map_3D;
+	vPT3D		= matrix_3d.clone();
+	
+	Mat vloc;
+	//matrix_3d.copyTo(vloc);
+	vloc = matrix_3d.clone();
+	Mat vglob(vloc.rows, vloc.cols, vloc.type());
+	getGlobalPTs3D(vloc, vglob);
+	
+	vMap.push_back(vglob);
 	
 	cv::putText(vImgScaled, s_imgR.str(),
 				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
@@ -133,13 +144,40 @@ void Visualizer::show(Mat &frame,
 	vKP_ref		= kp;
 }
 
+void Visualizer::getGlobalPTs3D(Mat &loc, Mat &glob)
+{
+	Mat RR_, tt_;
+	vTcam_E.rowRange(0,3).colRange(0,3).copyTo(RR_);
+	vTcam_E.rowRange(0,3).col(3).copyTo(tt_);
+
+	for(int j = 0; j < loc.cols; j++)
+	{
+		/*cout 	<< "\n\nloc[" << loc.rows << "," << loc.cols 
+				<< "]\tc[" << j << "] = \t" << loc.col(j).t()<< endl;*/
+		Mat temp = ( RR_ * loc.col(j)) + tt_;
+		//cout << "temp =\t\t" <<temp.t() << endl;
+		temp.copyTo(glob.rowRange(0,3).col(j));
+		/*gPT3D.at<float>(0,j) = temp.at<float>(0);
+		gPT3D.at<float>(1,j) = temp.at<float>(1);
+		gPT3D.at<float>(2,j) = temp.at<float>(2);*/
+		//gPT3D.col(j) = temp;
+			
+		/*cout 	<< "glob[" << glob.rows << "," << glob.cols 
+				<< "]\tc[" << j << "] = \t" << glob.col(j).t()<< endl;*/
+	}
+	//cout << "--------------------------------------------------"<< endl;
+		/*cout 	<< "\n\nvPT3D r,c :\t" << vPT3D.rows << "," << vPT3D.cols
+				<<"\tvs. gPts r,c :\t" << gPT3D.rows << "," << gPT3D.cols
+				<< endl;*/
+		
+}
+
+
 void Visualizer::run()
 {
-
 	thread t1(&Visualizer::openCV_, this);
 	thread t2(&Visualizer::openGL_, this);
 	//thread t3(&Visualizer::PCL_, this);
-	
 
 	t1.join();
 	t2.join();
@@ -153,8 +191,8 @@ void Visualizer::PCL_()
 	viz.setBackgroundColor(0,0,0);
 	
 	// original cloud -> blue
-	PointCloudColorHandlerCustom<PointXYZRGB> originalCloudColor(vCloud, 0, 0, 250);
-	viz.addPointCloud<PointXYZRGB>(vCloud, originalCloudColor, "originalPointCloud");
+	PointCloudColorHandlerCustom<PointXYZ> originalCloudColor(vCloud, 0, 0, 250);
+	viz.addPointCloud<PointXYZ>(vCloud, originalCloudColor, "originalPointCloud");
 	
 	viz.addText("Point Cloud", 30, 50, 16, 0, 0, 150);
 	
@@ -185,28 +223,20 @@ void Visualizer::openCV_()
 void Visualizer::openGL_()
 {
 	float width 	= 1600;
-    float heigth 	= 900;
+    float heigth 	= 1000;
     
     pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
     
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(width, heigth, 220, 220, .3*width, .5*heigth, .2, 100),
-        pangolin::ModelViewLookAt(0,5,0, 0,0,0, pangolin::AxisZ)
-        //pangolin::ModelViewLookAt(-0.8,0.5,-0.5, 0,0,0, pangolin::AxisY)
-        //pangolin::ModelViewLookAt(0,-1,0,0,0,0, 0,0,1) // equivalent
-    );
 
-    // Create Interactive View in window
-    pangolin::Handler3D handler(s_cam);
-    
-    pangolin::View& d_cam = pangolin::CreateDisplay()
-            .SetBounds(0.0, 1.0, 0.0, 1.0, width/heigth)
-            .SetHandler(&handler);
-
+	pangolin::OpenGlRenderState s_cam(
+			pangolin::ProjectionMatrix(width, heigth, 100, 100, .56*width, .97*heigth, .2, 100),
+			pangolin::ModelViewLookAt(0,7,0, 0,0,0, pangolin::AxisZ));
+	pangolin::View& d_cam = pangolin::CreateDisplay()
+            .SetBounds(0.0, 1.0, 0.0, 1.0, -width/heigth)
+            .SetHandler(new pangolin::Handler3D(s_cam));
 
 	// GNSS/INS in World Coordinate:
     pangolin::OpenGlMatrix pT_gt;
@@ -215,19 +245,17 @@ void Visualizer::openGL_()
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	vector<Triplet>	vertices_cam_Ess;
+	//vector<Mat> vMap;
 	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
 	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
-	{
-        // Clear screen and activate view to render into
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				
+	{ // Clear screen and activate view to render into
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				
 		d_cam.Activate(s_cam);
 		glClearColor(1,1,1,0);
-		draw_wrd_axis();
 		
-		draw_map_points();
 		
+		drawWRLD();
 		// ############ Draw GROUND TRUTH ############
 		Triplet current_gt_pt;
 		pT_gt 	= getCurrentPose(vTgt);
@@ -236,7 +264,7 @@ void Visualizer::openGL_()
 		{
 			KeyFrames.push_back(pT_gt);
 		}
-		draw(pT_gt,0, .58, .16);
+		draw(pT_gt, .1, 1, .1);
 		//draw_KF(KeyFrames);	
 		
 		//s_cam.Follow(pT_gt);
@@ -247,7 +275,7 @@ void Visualizer::openGL_()
 		
 		vertices_gt.push_back(current_gt_pt);
 		
-		draw_path(vertices_gt, .1, .3, .98);
+		draw_path(vertices_gt, .1, .42, .98);
 		
 		counter_KF++;
 		// ############ Draw GROUND TRUTH ############
@@ -259,7 +287,7 @@ void Visualizer::openGL_()
 		pangolin::OpenGlMatrix pTc_0;
 		pTc_0.SetIdentity();
 		pTc_0 	= getCurrentPose(vTcam_0);
-		draw(pTc_0,.91,.02,.01); // red
+		//draw(pTc_0,.91,.02,.01); // red
 		//s_cam.Follow(pTc_0);
 		current_cam_pt_0.x = vTcam_0.at<float>(0,3);
 		current_cam_pt_0.y = vTcam_0.at<float>(1,3);
@@ -270,7 +298,7 @@ void Visualizer::openGL_()
 		pangolin::OpenGlMatrix pTc_1;
 		pTc_1.SetIdentity();
 		pTc_1 	= getCurrentPose(vTcam_1);
-		draw(pTc_1, .08,.84,.2); // green
+		//draw(pTc_1, .08,.84,.2); // green
 		current_cam_pt_1.x = vTcam_1.at<float>(0,3);
 		current_cam_pt_1.y = vTcam_1.at<float>(1,3);
 		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
@@ -281,7 +309,7 @@ void Visualizer::openGL_()
 		pangolin::OpenGlMatrix pTc_2;
 		pTc_2.SetIdentity();
 		pTc_2 	= getCurrentPose(vTcam_2);
-		draw(pTc_2, .01, .01, .01); // black
+		//draw(pTc_2, .01, .01, .01); // black
 		current_cam_pt_2.x = vTcam_2.at<float>(0,3);
 		current_cam_pt_2.y = vTcam_2.at<float>(1,3);
 		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
@@ -292,7 +320,7 @@ void Visualizer::openGL_()
 		pangolin::OpenGlMatrix pTc_3;
 		pTc_3.SetIdentity();
 		pTc_3 	= getCurrentPose(vTcam_3);
-		draw(pTc_3, .01,.01,.92); // blue
+		//draw(pTc_3, .01,.01,.92); // blue
 		current_cam_pt_3.x = vTcam_3.at<float>(0,3);
 		current_cam_pt_3.y = vTcam_3.at<float>(1,3);
 		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
@@ -300,26 +328,97 @@ void Visualizer::openGL_()
 		draw_path(vertices_cam_3, .09,.91, .61);
 		// ############ Homography Matrix solution ############
 		
-		
 		// ############ Essential Matrix solution ############
 		Triplet current_cam_pt_E;
+		
 		pangolin::OpenGlMatrix pTc_Ess;
 		pTc_Ess.SetIdentity();
 
 		pTc_Ess 	= getCurrentPose(vTcam_E);
-		draw(pTc_Ess, 0.95, 0, 0.7);	// pink
-	
+		draw(pTc_Ess, 0.95, 0, 0.71); // pink
 		// camera:
 		current_cam_pt_E.x = vTcam_E.at<float>(0,3);
 		current_cam_pt_E.y = vTcam_E.at<float>(1,3);
 		current_cam_pt_E.z = vTcam_E.at<float>(2,3);
 		vertices_cam_Ess.push_back(current_cam_pt_E);
-		
-		draw_path(vertices_cam_Ess, .8,.6,.08);
+		draw_path(vertices_cam_Ess, .81,.06,.08);
 		// ############ Essential Matrix solution ############
 		
+		drawPC();
+		
+		//gen_dummy();
+		//draw_dummy();
 		pangolin::FinishFrame();
 	}
+}
+
+void Visualizer::drawPC(vector<Mat> &pcVec)
+{
+	glPointSize(1.9f);
+	glColor3f(0,0,0);
+	glBegin(GL_POINTS);
+	for(size_t i = 0; i < pcVec.size(); i++)
+	{
+		//cout << "Draw r,c [" << i <<"] = \t" <<pcVec[i].rows << " , " << pcVec[i].cols<< endl;
+		for(int j = 0; j < pcVec[i].cols; j++)
+		{
+			glVertex3f(pcVec[i].at<float>(0,j), pcVec[i].at<float>(1,j), pcVec[i].at<float>(2,j));
+		}
+	}
+	glEnd();
+}
+
+
+void Visualizer::drawPC()
+{
+	glPointSize(.5f);
+	glColor3f(.1,.1,.1);
+	glBegin(GL_POINTS);
+	
+	for(size_t i = 0; i < vMap.size(); i++)
+	{
+		//cout << "Draw r,c [" << i <<"] = \t" <<vMap[i].rows << " , " << vMap[i].cols<< endl;
+		for(int j = 0; j < vMap[i].cols; j++)
+		{
+			glVertex3f(vMap[i].at<float>(0,j), vMap[i].at<float>(1,j), vMap[i].at<float>(2,j));
+		}
+	}
+	glEnd();
+	//glFlush();
+}
+
+void Visualizer::gen_dummy()
+{
+	srand (static_cast <unsigned> (time(0)));
+	for (size_t i = 0; i < 300; i++)
+	{
+		float LO = -15.0f;
+		float HI = 15.0;
+		Mat mat(3,1, CV_32F);
+		mat.at<float>(0) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
+		mat.at<float>(1) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
+		mat.at<float>(2) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
+		cout << "\nmat =\t" <<mat.t()<< endl;
+		vMAT.push_back(mat);
+	}
+	//cout << "dummy sz =\t" << vMAT.size() << endl;
+}
+
+void Visualizer::draw_dummy()
+{	
+	//srand (static_cast <unsigned> (time(0)));
+	float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	cout << "rgb =\t"<<r<<" , "<<g<<" , "<<b<< endl;
+	glColor3f(r,g,b);
+	glPointSize(.8f);
+	glBegin(GL_POINTS);
+	for (size_t i = 0; i < vMAT.size(); i++)
+	{
+		glVertex3f(vMAT[i].at<float>(0), vMAT[i].at<float>(1), vMAT[i].at<float>(2));
+	}
+	glEnd();
 }
 
 pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)
@@ -329,27 +428,28 @@ pangolin::OpenGlMatrix Visualizer::getCurrentPose(Mat &T)
 	curPose.m[0]  = T.at<float>(0,0);
 	curPose.m[1]  = T.at<float>(1,0);
 	curPose.m[2]  = T.at<float>(2,0);
-	curPose.m[3]  = 0.0;
+	curPose.m[3]  = 0;
 	
 	curPose.m[4]  = T.at<float>(0,1);
 	curPose.m[5]  = T.at<float>(1,1);
 	curPose.m[6]  = T.at<float>(2,1);
-	curPose.m[7]  = 0.0;
+	curPose.m[7]  = 0;
 
 	curPose.m[8]  = T.at<float>(0,2);
 	curPose.m[9]  = T.at<float>(1,2);
 	curPose.m[10] = T.at<float>(2,2);
-	curPose.m[11] = 0.0;
+	curPose.m[11] = 0;
 
-	curPose.m[12] = T.at<float>(3,0);
-	curPose.m[13] = T.at<float>(3,1);
-	curPose.m[14] = T.at<float>(3,2);
+	curPose.m[12] = T.at<float>(0,3);
+	curPose.m[13] = T.at<float>(1,3);
+	curPose.m[14] = T.at<float>(2,3);
 	curPose.m[15] = 1.0;
+	
 	
 	return curPose;
 }
 
-void Visualizer::draw_wrd_axis()
+void Visualizer::drawWRLD()
 {
 	glColor3f(1,0,0); // red x
 	glBegin(GL_LINES);
@@ -391,9 +491,9 @@ void Visualizer::draw_wrd_axis()
 
 void Visualizer::draw_path(vector<Triplet> &vertices, float r, float g, float b)
 {
-	glLineWidth(.9);
-	glColor4f(r,g,b, 1);
-	glBegin(GL_LINES);
+	glLineWidth(5);
+	glColor4f(r, g, b, 1);
+	glBegin(GL_LINE_STRIP);
 	
 	for (size_t i = 1; i < vertices.size(); i++)
 	{
@@ -406,7 +506,7 @@ void Visualizer::draw_path(vector<Triplet> &vertices, float r, float g, float b)
 
 void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
 {
-    const float w = .03;
+    const float w = .3;
     const float h = w*1;
     const float z = w*1;
 
@@ -426,18 +526,18 @@ void Visualizer::draw_KF(vector<pangolin::OpenGlMatrix> &KeyFrames)
 		// camera axis: X  red.
 		glColor3f (1,0,0);
 		glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);
-    	glVertex3f(KeyFrames[i].m[12]+.07, KeyFrames[i].m[13], KeyFrames[i].m[14]);
+    	glVertex3f(KeyFrames[i].m[12]+2.2, KeyFrames[i].m[13], KeyFrames[i].m[14]);
     	
     	glColor3f (0,1,0);  	//Y green.	
     	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]); 	
-    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13]+.07, KeyFrames[i].m[14]);
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13]+2.2, KeyFrames[i].m[14]);
     	
     	glColor3f (0,0,1);  	//Z  blue.
     	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]);
-    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]+.07);
+    	glVertex3f(KeyFrames[i].m[12], KeyFrames[i].m[13], KeyFrames[i].m[14]+2.2);
 		
 		
-		glColor3f(.93, .44, .9);
+		glColor3f(.93, .1, .09);
 		glVertex3f(KeyFrames[i].m[12], 		KeyFrames[i].m[13], 		KeyFrames[i].m[14]);	
 		glVertex3f(w+KeyFrames[i].m[12],	h+KeyFrames[i].m[13],		z+KeyFrames[i].m[14]);
 		
@@ -479,82 +579,46 @@ void Visualizer::draw(pangolin::OpenGlMatrix &T, float r, float g, float b)
 		glMultMatrixd(T.m);
 #endif
 
-    const float w = .5;
+    const float w = .9;
     const float h = w*0.7;
     const float z = w*0.5;
-
-	glLineWidth(.8);
-	glColor3f(r,g,b);
-	
+    
+	glLineWidth(1);
 	glBegin(GL_LINES);
-
-    glVertex3f(0,0,0);
-	glVertex3f(w,h,z);
-    
-	glVertex3f(0,0,0);
-	glVertex3f(w,-h,z);
-
-	glVertex3f(0,0,0);
-	glVertex3f(-w,-h,z);
-    
-	glVertex3f(0,0,0);
-	glVertex3f(-w,h,z);
-
-	glVertex3f(w,h,z);
-	glVertex3f(w,-h,z);
-
-	glVertex3f(-w,h,z);
-	glVertex3f(-w,-h,z);
-
-	glVertex3f(-w,h,z);
-	glVertex3f(w,h,z);
-
-	glVertex3f(-w,-h,z);
-	glVertex3f(w,-h,z);
-
+	
 	// axis
-    glColor3f (1,0,0);  		glVertex3f (0,0,0);  	glVertex3f (.07,0,0);    // X  red.
-    glColor3f (0,1,0);  		glVertex3f (0,0,0);  	glVertex3f (0,.07,0);    // Y green.
-    glColor3f (0,0,1);  		glVertex3f (0,0,0);  	glVertex3f (0,0,.07);    // z  blue.
+    glColor3f (1,0,0);  		glVertex3f (0, 0, 0);  	glVertex3f (1, 0, 0);    // X  red.
+    glColor3f (0,1,0);  		glVertex3f (0, 0, 0);  	glVertex3f (0, 1, 0);    // Y green.
+	glColor3f (0,0,1); 			glVertex3f (0, 0, 0); 	glVertex3f (0, 0, 1); // z  blue.
+	
+	glColor3f(r,g,b);
+	glVertex3f(0,0,0);
+	glVertex3f(w,h,z);
+    
+	glVertex3f(0,0,0);
+	glVertex3f(w,-h,z);
+
+	glVertex3f(0,0,0);
+	glVertex3f(-w,-h,z);
+    
+	glVertex3f(0,0,0);
+	glVertex3f(-w,h,z);
+
+	glVertex3f(w,h,z);
+	glVertex3f(w,-h,z);
+
+	glVertex3f(-w,h,z);
+	glVertex3f(-w,-h,z);
+
+	glVertex3f(-w,h,z);
+	glVertex3f(w,h,z);
+
+	glVertex3f(-w,-h,z);
+	glVertex3f(w,-h,z);
+
     
     glEnd();
     glFlush();
     glPopMatrix();
 }
-
-void Visualizer::draw_map_points()
-{
-	if(mapPoints.empty())
-	{
-		cout << "No Map Points..." << endl;
-		return;
-	}
-	cout << "Map Points size [draw_map_points] =\t" << mapPoints.size() << endl;
-
-	float mPointSize = 1.2f;
-	glPointSize(mPointSize);
-	glColor3f(0,0,0);
-	glBegin(GL_POINTS);
-	cout << "B4 for loop!" << endl;
-	for(size_t i = 0; i < mapPoints.size(); i++)
-	{
-		float x = mapPoints[i].x;
-		float y = mapPoints[i].y;
-		float z = mapPoints[i].z;
-		
-		
-		/*cout 	<< "Map Points[" 	<< i 
-				<< "] = \t" 		<< mapPoints[i].x 
-				<< " , "			<< mapPoints[i].y 
-				<< " , "			<< mapPoints[i].z 
-				<< endl;*/
-		glVertex3f(x, y, z);
-	}
-    cout << "\n\nMap Points DONE!\n" << endl;
-	
-	
-	glEnd();
-    glFlush();
-}
-
 }

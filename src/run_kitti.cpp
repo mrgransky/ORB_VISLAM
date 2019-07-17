@@ -15,9 +15,9 @@
 using namespace std;
 using namespace cv;
 
-void import_GT(const string &path, vector<Mat> &T_abs, vector<double> &scale_abs)
+void import_GT(const string &path, vector<Mat> &T_abs, vector<float> &scale_abs)
 {
-	vector <double> T_00, T_01, T_02, T_03,
+	vector <float> T_00, T_01, T_02, T_03,
 					T_10, T_11, T_12, T_13,
 					T_20, T_21, T_22, T_23;
 
@@ -158,12 +158,12 @@ int main( int argc, char** argv )
 		return -1; 
 	}
 	//Mat img;
-	string seqPath = string(argv[1]) + "sequences/00";
-	string GT_Path = string(argv[1]) + "poses/00.txt";
+	string seqPath = string(argv[1]) + "sequences/05";
+	string GT_Path = string(argv[1]) + "poses/05.txt";
 	
 	// improt ground truth:
 	vector<Mat> T_GT;
-	vector<double> scale_GT;
+	vector<float> scale_GT;
 	import_GT(GT_Path, T_GT, scale_GT);
 	
 	cout << "T_GT sz = \t" << T_GT.size() << "\tscale_GT sz = \t"<< scale_GT.size()<< endl;
@@ -256,16 +256,13 @@ int main( int argc, char** argv )
 		{
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		//cout << "main Tgt [" << keyIMG[ni] << "] =\n"<< T_GT[keyIMG[ni]] << endl;
-		mySLAM.run(img, frame_name, f_vo, f_gt, f_rvec_abs, vo_loc,
+		mySLAM.run(img, frame_name, f_vo, f_gt, f_rvec_abs, vo_loc, f_pc,
 					T_GT[keyIMG[ni]], scale_GT[keyIMG[ni]]);
 	}
 	clock_t tEnd = clock();
 	double runTime;
 	runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
 	cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
-	mySLAM.savePointCloud();
-	mySLAM.save3Dpoints(f_pc);
 	
 	//mySLAM.shutdown();
 	return 0;

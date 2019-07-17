@@ -28,16 +28,13 @@ Vision::Vision(const string &settingFilePath,
 	pp = Point2f(cx,cy);
 	fps 				= fSettings["Camera.fps"];
 	vMIN_SCALE = minScale;
-	Mat K = Mat::eye(3, 3, CV_64F);
-	K.at<double>(0,0) 		= fx;
-    K.at<double>(1,1) 		= fy;
-    K.at<double>(0,2) 		= cx;
-    K.at<double>(1,2) 		= cy;
+	Mat K = Mat::eye(3, 3, CV_32F);
+	K.at<float>(0,0) 		= fx;
+    K.at<float>(1,1) 		= fy;
+    K.at<float>(0,2) 		= cx;
+    K.at<float>(1,2) 		= cy;
 
 	K.copyTo(mK);
-	
-	mK.copyTo(P_prev.rowRange(0,3).colRange(0,3));
-	mK.copyTo(P.rowRange(0,3).colRange(0,3));
 	
 	Mat DistCoef(4, 1, CV_32F);
 	
@@ -80,7 +77,7 @@ Vision::Vision(const string &settingFilePath,
 	
 	I_3x3 	= Mat::eye(3, 3, CV_64F);
 	I_4x4 	= Mat::eye(4, 4, CV_64F);	
-	Z_3x1 	= Mat::zeros(3, 1, CV_64F);
+	Z_3x1 	= Mat::zeros(3, 1, CV_32F);
 	
 	T_local = vector<Mat>{I_4x4, I_4x4, I_4x4, I_4x4};
 	T_f 	= vector<Mat>{I_4x4, I_4x4, I_4x4, I_4x4};
@@ -90,46 +87,53 @@ Vision::Vision(const string &settingFilePath,
 	
 	t_f 		= vector<Mat>{Z_3x1, Z_3x1, Z_3x1, Z_3x1};
 	t_f_prev 	= vector<Mat>{Z_3x1, Z_3x1, Z_3x1, Z_3x1};
-	
-	R_f_E = Mat::eye(3, 3, CV_64F);
+	//map_3D		= vector<Mat>{Z_3x1};
+	cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+		
+	R_f_E = Mat::eye(3, 3, CV_32F);
+	//R_f_E = Mat::eye(3, 3, CV_64F);
 	R_f_0 = Mat::eye(3, 3, CV_64F);
 	R_f_1 = Mat::eye(3, 3, CV_64F);
 	R_f_2 = Mat::eye(3, 3, CV_64F);
 	R_f_3 = Mat::eye(3, 3, CV_64F);
 
-	cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
-	
-	rvec_E = Mat::zeros(3, 1, CV_64F);
+	rvec_E = Mat::zeros(3, 1, CV_32F);
+	//rvec_E = Mat::zeros(3, 1, CV_64F);
 	rvec_0 = Mat::zeros(3, 1, CV_64F);
 	rvec_1 = Mat::zeros(3, 1, CV_64F);
 	rvec_2 = Mat::zeros(3, 1, CV_64F);
 	rvec_3 = Mat::zeros(3, 1, CV_64F);
 	
-	rvec_loc_E = Mat::zeros(3, 1, CV_64F);
+	rvec_loc_E = Mat::zeros(3, 1, CV_32F);
+	//rvec_loc_E = Mat::zeros(3, 1, CV_64F);
 	rvec_loc_0 = Mat::zeros(3, 1, CV_64F);
 	rvec_loc_1 = Mat::zeros(3, 1, CV_64F);
 	rvec_loc_2 = Mat::zeros(3, 1, CV_64F);
 	rvec_loc_3 = Mat::zeros(3, 1, CV_64F);
 	
-	t_f_E = Mat::zeros(3, 1, CV_64F);
+	t_f_E = Mat::zeros(3, 1, CV_32F);
+	//t_f_E = Mat::zeros(3, 1, CV_64F);
 	t_f_0 = Mat::zeros(3, 1, CV_64F);
 	t_f_1 = Mat::zeros(3, 1, CV_64F);
 	t_f_2 = Mat::zeros(3, 1, CV_64F);
 	t_f_3 = Mat::zeros(3, 1, CV_64F);
 	
-	R_f_prev_E = Mat::eye(3, 3, CV_64F);
+	R_f_prev_E = Mat::eye(3, 3, CV_32F);
+	//R_f_prev_E = Mat::eye(3, 3, CV_64F);
 	R_f_prev_0 = Mat::eye(3, 3, CV_64F);
 	R_f_prev_1 = Mat::eye(3, 3, CV_64F);
 	R_f_prev_2 = Mat::eye(3, 3, CV_64F);
 	R_f_prev_3 = Mat::eye(3, 3, CV_64F);
 	
-	rvec_prev_E = Mat::zeros(3, 1, CV_64F);
+	rvec_prev_E = Mat::zeros(3, 1, CV_32F);
+	//rvec_prev_E = Mat::zeros(3, 1, CV_64F);
 	rvec_prev_0 = Mat::zeros(3, 1, CV_64F);
 	rvec_prev_1 = Mat::zeros(3, 1, CV_64F);
 	rvec_prev_2 = Mat::zeros(3, 1, CV_64F);
 	rvec_prev_3 = Mat::zeros(3, 1, CV_64F);
 	
-	t_f_prev_E = Mat::zeros(3, 1, CV_64F);
+	t_f_prev_E = Mat::zeros(3, 1, CV_32F);
+	//t_f_prev_E = Mat::zeros(3, 1, CV_64F);
 	t_f_prev_0 = Mat::zeros(3, 1, CV_64F);
 	t_f_prev_1 = Mat::zeros(3, 1, CV_64F);
 	t_f_prev_2 = Mat::zeros(3, 1, CV_64F);
@@ -137,30 +141,20 @@ Vision::Vision(const string &settingFilePath,
 }
 
 void Vision::Analyze(Mat &rawImg, vector<KeyPoint> &kp, 
-						vector<pair<int,int>> &matches, 
-						vector<Point3f> &map_points)
+						vector<pair<int,int>> &matches)
 {
 	Mat descriptor;
-	
 	get_AKAZE_kp(rawImg, kp, descriptor);
-	//cout << "current kp sz = \t " << kp.size()<< endl;
-	// TODO: descriptor is different from AKAZE ??????????????????
 	//get_ORB_kp(rawImg, kp, descriptor);
 	
 	
 	//matching(rawImg, kp, matches);
-	
 	matching(rawImg, kp, descriptor, matches);
-	map_points = get_map_points();
-	cout << "map sz [Vision::Analyze] =\t" << map_points.size() << endl;
+	
+	//cout << "map sz [Vision::Analyze] =\t" << map_points.size() << endl;
 	ref_kp 		= kp;
 	ref_desc 	= descriptor;
 	ref_img 	= rawImg;
-}
-
-vector<Point3f> Vision::get_map_points()
-{
-	return map_3D;
 }
 
 void Vision::setCurrentPose(Mat &R_, Mat &t_, Mat &T_)
@@ -291,7 +285,8 @@ vector<pair<int,int>> Vision::crossCheckMatching(	vector<pair<int,int>> &m_12,
 	return CrossCheckedMatches;
 }
 
-void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc, vector<pair<int,int>> &match_idx)
+void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc, 
+					vector<pair<int,int>> &match_idx)
 {	
 	Ptr<DescriptorMatcher> matcher 	= DescriptorMatcher::create("BruteForce-Hamming");
 	
@@ -316,6 +311,46 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc, vector<pair<int
 		essential_matrix_inliers(src, dst, ref_kp_idx, kp_idx, all_matches, match_idx);
 		//homography_matrix_inliers(src, dst, ref_kp_idx, kp_idx, all_matches, match_idx);
 		//fundamental_matrix_inliers(src, dst, ref_kp_idx, kp_idx, all_matches, match_idx);	
+	}
+}
+
+void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst,
+										vector<int> &ref_kp_idx, vector<int> &kp_idx,
+										vector<vector<DMatch>> &all_matches,
+										vector<pair<int,int>> &match_idx)
+{
+	double minVal,maxVal;
+	cv::minMaxIdx(src, &minVal, &maxVal);
+	vector<Point2f> srcInlier, dstInlier;
+	
+	//double minDis2EpipolarLine = 0.006 * maxVal; // in pixel, greater values -> outlier.
+	double minDis2EpipolarLine = .5; // in pixel, greater values -> outlier.
+	double confidence = .999;
+	vector<uchar> mask;
+	
+	Essential_Matrix = findEssentialMat(dst, src, FOCAL_LENGTH, pp, RANSAC, 
+											confidence, minDis2EpipolarLine, mask);
+
+    //cout << "\n\nEssential Matrix =\n " << Essential_Matrix << endl;
+	int inliers_num = countNonZero(mask);
+	for(size_t nm = 0; nm < mask.size(); nm++)
+	{
+		if(mask[nm])
+		{
+			match_idx.push_back(make_pair(ref_kp_idx[nm], kp_idx[nm]));
+			
+			srcInlier.push_back(src[nm]);
+			dstInlier.push_back(dst[nm]);
+		}
+	}
+	cout << "2D Matches:\n"; 
+	cout << "\tALL\tMASK\tINLIERS\n";
+	cout << '\t' << all_matches.size() << '\t' << mask.size() << '\t' << inliers_num << '\n';
+	
+	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
+	{
+		PoseFromEssentialMatrix(srcInlier, dstInlier);
+		cout << "----------------------------------------------------------------" << endl;
 	}
 }
 
@@ -350,47 +385,6 @@ void Vision::homography_matrix_inliers(vector<Point2f> &src, vector<Point2f> &ds
 	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
 	{
 		PoseFromHomographyMatrix(srcInlier, dstInlier);
-		cout << "----------------------------------------------------------------" << endl;
-	}
-}
-
-void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst, 
-										vector<int> &ref_kp_idx, vector<int> &kp_idx, 
-										vector<vector<DMatch>> &all_matches,
-										vector<pair<int,int>> &match_idx)
-{
-	double minVal,maxVal;
-	cv::minMaxIdx(src, &minVal, &maxVal);
-	vector<Point2f> srcInlier, dstInlier;
-	
-	//double minDis2EpipolarLine = 0.006 * maxVal; // in pixel, greater values -> outlier.
-	double minDis2EpipolarLine = .5; // in pixel, greater values -> outlier.
-	double confidence = .999;
-	vector<uchar> mask;
-	Mat E12, E21;
-	
-	Essential_Matrix = findEssentialMat(dst, src, FOCAL_LENGTH, pp, RANSAC, 
-											confidence, minDis2EpipolarLine, mask);
-
-    //cout << "\n\nEssential Matrix =\n " << Essential_Matrix << endl;
-	int inliers_num = countNonZero(mask);
-	for(size_t nm = 0; nm < mask.size(); nm++)
-	{
-		if(mask[nm])
-		{
-			match_idx.push_back(make_pair(ref_kp_idx[nm], kp_idx[nm]));
-			
-			srcInlier.push_back(src[nm]);
-			dstInlier.push_back(dst[nm]);
-		}
-	}
-	cout << "2D Matches:\n"; 
-	cout << "\tALL\tMASK\tINLIERS\n";
-	cout << '\t' << all_matches.size() << '\t' << mask.size() << '\t' << inliers_num << '\n';
-		
-	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
-	{
-		PoseFromEssentialMatrix(srcInlier, dstInlier);
 		cout << "----------------------------------------------------------------" << endl;
 	}
 }
@@ -612,72 +606,70 @@ void Vision::PoseFromHomographyMatrix(vector<Point2f> &src, vector<Point2f> &dst
 	t_f_prev_3 = t_f_3;
 }
 
-void Vision::PoseFromEssentialMatrix(vector<Point2f> &src, vector<Point2f> &dst)
+void Vision::PoseFromEssentialMatrix(vector<Point2f> &src, 
+									vector<Point2f> &dst)
 {
 	Mat R_local, t_local, mask;
-	//double err = 0;
-	vector<Point3f> pt3D_local_vec;
-	Mat pt3D_matrix(3, 1, CV_64F);
+	vector<Mat> p3D_loc;
 	
 	recoverPose(Essential_Matrix, dst, src, R_local, t_local, FOCAL_LENGTH, pp, mask);
+	R_local.convertTo(R_local, CV_32F);
+	t_local.convertTo(t_local, CV_32F);
+	
 	setCurrentPose(R_local, t_local, T_loc_E);
-	R_local.copyTo(P.rowRange(0,3).colRange(0,3));
-	t_local.copyTo(P.col(3));
-	P = mK * P;
+	R_local.copyTo(Rt.rowRange(0,3).colRange(0,3));
+	t_local.copyTo(Rt.col(3));
 	//cout << "sc (Essential Matrix)\t = "<< sc  << endl;
-	if (sc > vMIN_SCALE &&	t_local.at<double>(2,0) > t_local.at<double>(0,0) &&
-							t_local.at<double>(2,0) > t_local.at<double>(1,0))
+	if (sc > vMIN_SCALE &&	t_local.at<float>(2,0) > t_local.at<float>(0,0) &&
+							t_local.at<float>(2,0) > t_local.at<float>(1,0))
 	{
+		Reconstruction(src, dst, Rt_prev, Rt, p3D_loc);
+		Mat visLOCAL(3, p3D_loc.size(), CV_32F);
+		
+		for (size_t i = 0; i < p3D_loc.size(); i++)
+		{
+			p3D_loc[i].copyTo(visLOCAL.col(i));
+		}
+		
+		
 		t_f_E = t_f_prev_E + sc*(R_f_E * t_local);
 		R_f_E = R_f_prev_E * R_local;
-		//R_f_E = R_local * R_f_prev_E; 
-		Rodrigues(R_f_0, rvec_E);
+		//R_f_E = R_local * R_f_prev_E;
+		Rodrigues(R_f_E, rvec_E);
 		setCurrentPose(R_f_E, t_f_E, T_cam_E);
-		Reconstruction(src, dst, P_prev, P, pt3D_local_vec);
-		for(size_t i = 0; i < pt3D_local_vec.size(); i++)
+		
+		//cout << "visLOCAL [r,c] =\t" << visLOCAL.rows <<" , "<< visLOCAL.cols << endl;
+		visLOCAL.copyTo(visionMap);
+		/*for(int j = 0; j < visLOCAL.cols; j++)
 		{
-			Mat pt3D_loc_matrix(3, 1, CV_64F);
-			Point3D_2_Mat(pt3D_local_vec[i], pt3D_loc_matrix);
-			pt3D_matrix = (R_f_E * pt3D_loc_matrix) + t_f_E;
-			map_3D.push_back(Mat_2_Point3D(pt3D_matrix));
-		}
-		cout << "3D Points [Map]:\t" << map_3D.size() << endl;
-		//triangulateFcn(src, dst, P_prev, P, err);
+			cout << "visLOCAL[" <<j<<"] = \t" <<visLOCAL.col(j).t()<< endl;
+		}*/
 	}
 	R_f_prev_E 		= R_f_E.clone();
 	rvec_prev_E 	= rvec_E.clone();	
 	t_f_prev_E 		= t_f_E.clone();
-	P_prev			= P.clone();
+	Rt_prev			= Rt.clone();
 }
 
-void Vision::Point3D_2_Mat(Point3f &pt, Mat &mat)
+void Vision::Reconstruction(vector<Point2f> &src, vector<Point2f> &dst, Mat &Rt_prev, Mat &Rt,
+							vector<Mat> &pt3D_loc)
 {
-	mat.at<double>(0,0) = pt.x;
-	mat.at<double>(1,0) = pt.y;
-	mat.at<double>(2,0) = pt.z;
-}
-
-Point3f Vision::Mat_2_Point3D(Mat &mat)
-{
-	return (Point3f(mat.at<double>(0,0), mat.at<double>(1,0), mat.at<double>(2,0)));
-}
-
-void Vision::Reconstruction(vector<Point2f> &src, 	
-							vector<Point2f> &dst, 
-							Mat &P_prev, Mat &P, 
-							vector<Point3f> &pt3D_loc)
-{
+	Mat P_prev, P;
+	P_prev = mK * Rt_prev;
+	P = mK * Rt;
 	//cout << "\n\nP_prv =\n" << P_prev<< "\nP = \n"<< P << endl;
-	Point3f pt3D_cam0, pt3D_cam1;
-	Mat pt4D = Mat::zeros(4, src.size(), CV_64F);
 	for (size_t i = 0; i < src.size(); i++)
 	{
-		Mat A(6, 4, CV_64F);
-		Mat src_skew(3, 3, CV_64F);
-		Mat dst_skew(3, 3, CV_64F);
+		Mat pt3D_cam0 = Mat::zeros(3, 1, CV_32F);
+		Mat pt3D_cam1 = Mat::zeros(3, 1, CV_32F);
 		
-		Mat src_skewXP_prev(3, 4, CV_64F);
-		Mat dst_skewXP(3, 4, CV_64F);
+		Mat pt4D(4, 1, CV_32F);
+		Mat A(6, 4, CV_32F);
+		Mat src_skew(3, 3, CV_32F);
+		Mat dst_skew(3, 3, CV_32F);
+		
+		Mat src_skewXP_prev(3, 4, CV_32F);
+		Mat dst_skewXP(3, 4, CV_32F);
 		
 		getSkewMatrix(src[i], src_skew);
 		getSkewMatrix(dst[i], dst_skew);
@@ -686,53 +678,67 @@ void Vision::Reconstruction(vector<Point2f> &src,
 		getExtrinsic(dst_skew, P, dst_skewXP);
 		
 		// fill out A matrix
-		A.at<double>(0,0) = src_skewXP_prev.at<double>(0,0);
-		A.at<double>(1,0) = src_skewXP_prev.at<double>(1,0);
-		A.at<double>(2,0) = src_skewXP_prev.at<double>(2,0);
-		A.at<double>(3,0) = dst_skewXP.at<double>(0,0);
-		A.at<double>(4,0) = dst_skewXP.at<double>(1,0);
-		A.at<double>(5,0) = dst_skewXP.at<double>(2,0);
+		A.at<float>(0,0) = src_skewXP_prev.at<float>(0,0);
+		A.at<float>(1,0) = src_skewXP_prev.at<float>(1,0);
+		A.at<float>(2,0) = src_skewXP_prev.at<float>(2,0);
+		A.at<float>(3,0) = dst_skewXP.at<float>(0,0);
+		A.at<float>(4,0) = dst_skewXP.at<float>(1,0);
+		A.at<float>(5,0) = dst_skewXP.at<float>(2,0);
 		
-		A.at<double>(0,1) = src_skewXP_prev.at<double>(0,1);
-		A.at<double>(1,1) = src_skewXP_prev.at<double>(1,1);
-		A.at<double>(2,1) = src_skewXP_prev.at<double>(2,1);
-		A.at<double>(3,1) = dst_skewXP.at<double>(0,1);
-		A.at<double>(4,1) = dst_skewXP.at<double>(1,1);
-		A.at<double>(5,1) = dst_skewXP.at<double>(2,1);
+		A.at<float>(0,1) = src_skewXP_prev.at<float>(0,1);
+		A.at<float>(1,1) = src_skewXP_prev.at<float>(1,1);
+		A.at<float>(2,1) = src_skewXP_prev.at<float>(2,1);
+		A.at<float>(3,1) = dst_skewXP.at<float>(0,1);
+		A.at<float>(4,1) = dst_skewXP.at<float>(1,1);
+		A.at<float>(5,1) = dst_skewXP.at<float>(2,1);
 
-		A.at<double>(0,2) = src_skewXP_prev.at<double>(0,2);
-		A.at<double>(1,2) = src_skewXP_prev.at<double>(1,2);
-		A.at<double>(2,2) = src_skewXP_prev.at<double>(2,2);
-		A.at<double>(3,2) = dst_skewXP.at<double>(0,2);
-		A.at<double>(4,2) = dst_skewXP.at<double>(1,2);
-		A.at<double>(5,2) = dst_skewXP.at<double>(2,2);
+		A.at<float>(0,2) = src_skewXP_prev.at<float>(0,2);
+		A.at<float>(1,2) = src_skewXP_prev.at<float>(1,2);
+		A.at<float>(2,2) = src_skewXP_prev.at<float>(2,2);
+		A.at<float>(3,2) = dst_skewXP.at<float>(0,2);
+		A.at<float>(4,2) = dst_skewXP.at<float>(1,2);
+		A.at<float>(5,2) = dst_skewXP.at<float>(2,2);
 
-		A.at<double>(0,3) = src_skewXP_prev.at<double>(0,3);
-		A.at<double>(1,3) = src_skewXP_prev.at<double>(1,3);
-		A.at<double>(2,3) = src_skewXP_prev.at<double>(2,3);
-		A.at<double>(3,3) = dst_skewXP.at<double>(0,3);
-		A.at<double>(4,3) = dst_skewXP.at<double>(1,3);
-		A.at<double>(5,3) = dst_skewXP.at<double>(2,3);
+		A.at<float>(0,3) = src_skewXP_prev.at<float>(0,3);
+		A.at<float>(1,3) = src_skewXP_prev.at<float>(1,3);
+		A.at<float>(2,3) = src_skewXP_prev.at<float>(2,3);
+		A.at<float>(3,3) = dst_skewXP.at<float>(0,3);
+		A.at<float>(4,3) = dst_skewXP.at<float>(1,3);
+		A.at<float>(5,3) = dst_skewXP.at<float>(2,3);
 
 		Mat u,w,vt;
 		cv::SVDecomp(A,w,u,vt, cv::SVD::FULL_UV);
-		vt.row(3).reshape(0,4).copyTo(pt4D.col(i));
+		vt.row(3).reshape(0,4).copyTo(pt4D);
 		
-		//cout << "A =\n" << A << "\nw = \n"<< w << "\nu =\n"<< u << "\nvt =\n" << vt << endl;
+		pt3D_cam0.at<float>(0) = pt4D.at<float>(0) / pt4D.at<float>(3);
+		pt3D_cam0.at<float>(1) = pt4D.at<float>(1) / pt4D.at<float>(3);
+		pt3D_cam0.at<float>(2) = pt4D.at<float>(2) / pt4D.at<float>(3);
 		
-		pt3D_cam0.x = pt4D.at<double>(0,i) / pt4D.at<double>(3,i);
-		pt3D_cam0.y = pt4D.at<double>(1,i) / pt4D.at<double>(3,i);
-		pt3D_cam0.z = pt4D.at<double>(2,i) / pt4D.at<double>(3,i);
+		pt3D_cam1 = (Rt.rowRange(0,3).colRange(0,3) * pt3D_cam0) + Rt.rowRange(0,3).col(3);
 		
-		if(pt3D_cam0.z > 0 /* TODO: cam1 also*/)
+		if(pt3D_cam0.at<float>(2) > 0 &&  pt3D_cam1.at<float>(2) > 0)
 		{		
 			pt3D_loc.push_back(pt3D_cam0);
-			/*cout << "\np4D["<<i<<"] = "<<pt4D.col(i).t() << "\np3D =\t"<< pt3D_cam0 << endl;
-			cout << "-----------------------------------------------------------------" << endl;*/
+			/*cout 	<< "\np4D["<<i<<"] = \t"<< pt4D.t() 
+					<< "\np3D_cam0 =\t"		<< pt3D_cam0.t() 
+					<< "\np3D_cam1 =\t"		<< pt3D_cam1.t()
+					<< endl;
+			cout << "--------------------------------------------------------------" << endl;*/
 		}
 	}	
-	cout << "\n3D Points[local Coord]: \t" << pt3D_loc.size() << endl;
+	//cout << "\n3D Points[local]: \t" << pt3D_loc.size() << endl;
 }
+
+void Vision::GlobalMapPoints(vector<Mat> &p3D_loc, Mat &R_, Mat &t_, Mat &global_pts)
+{
+	for(size_t i = 0; i < p3D_loc.size(); i++)
+	{
+		Mat temp(3, 1, CV_32F);
+		temp = (R_ * p3D_loc[i]) + t_;
+		global_pts.col(i) = temp.clone();
+	}	
+}
+
 void Vision::getExtrinsic(Mat &skew, Mat &P, Mat &skewXP)
 {
 	skewXP = skew * P;
@@ -740,24 +746,28 @@ void Vision::getExtrinsic(Mat &skew, Mat &P, Mat &skewXP)
 
 void Vision::getSkewMatrix(Point2f &pt2D, Mat &skew)
 {
-	skew.at<double>(0,0) = 0;
-	skew.at<double>(0,1) = -1;
-	skew.at<double>(0,2) = pt2D.y;
+	skew.at<float>(0,0) = 0;
+	skew.at<float>(0,1) = -1;
+	skew.at<float>(0,2) = pt2D.y;
 		
-	skew.at<double>(1,0) = 1;
-	skew.at<double>(1,1) = 0;
-	skew.at<double>(1,2) = -pt2D.x;
+	skew.at<float>(1,0) = 1;
+	skew.at<float>(1,1) = 0;
+	skew.at<float>(1,2) = -pt2D.x;
 
-	skew.at<double>(2,0) = -pt2D.y;
-	skew.at<double>(2,1) = pt2D.x;
-	skew.at<double>(2,2) = 0;
+	skew.at<float>(2,0) = -pt2D.y;
+	skew.at<float>(2,1) = pt2D.x;
+	skew.at<float>(2,2) = 0;
 }
 
-
 void Vision::triangulateFcn(vector<Point2f> &src, vector<Point2f> &dst, 
-							Mat &P_prev, Mat &P, double reprojErr)
+							Mat &Rt_prev, Mat &Rt, double reprojErr)
 {
-	//cout << "\n\nP_prev =\n" << P_prev<< "\nP = \n"<< P << endl;
+	
+	Mat P_prev, P;
+	P_prev = mK * Rt_prev;
+	P = mK * Rt;
+	cout << "\n\nP_prv =\n" << P_prev<< "\nP = \n"<< P << endl;
+	
 	Mat pt4D;
 	Point3f pt3D;
 	vector<Point2f> normalized_src, normalized_dst;
@@ -812,13 +822,7 @@ void Vision::triangulateFcn(vector<Point2f> &src, vector<Point2f> &dst,
 		Mat R(3, 3, CV_64F);
 		Mat rvec, tvec;
 		
-		Mat Rt_prev = mK.inv() * P_prev;
-		Mat Rt		= mK.inv() * P;
-		
 		//cout << "\n\nRt_prev =\n" << Rt_prev << "\nRt = \n"<< Rt << endl;
-		
-		Rt_prev.rowRange(0,3).colRange(0,3).copyTo(R);
-		Rt_prev.col(3).copyTo(tvec);
 		
 		Rodrigues(R, rvec);
 		//cout << "\nrvec =\t" << rvec.t() << "\t tvec =\t"<< tvec.t() << endl;
@@ -851,10 +855,10 @@ void Vision::triangulateFcn(vector<Point2f> &src, vector<Point2f> &dst,
 			{
 				if(status[i])
 				{
-					map_3D.push_back(pt3D_vec[i]);
+					//map_3D.push_back(pt3D_vec[i]);
 				}
 			}
-			cout << "3d result sz = \t" << map_3D.size() << endl;
+			//cout << "3d result sz = \t" << map_3D.size() << endl;
 		}
 	}
 }

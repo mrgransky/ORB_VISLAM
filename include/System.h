@@ -25,7 +25,7 @@
 #include "AbsolutePose.h"
 #include "Visualizer.h"
 #include "Vision.h"
-
+#include "boost/make_shared.hpp"
 namespace ORB_VISLAM
 {
 	class System
@@ -47,8 +47,9 @@ namespace ORB_VISLAM
 						std::ofstream &file_gt, 
 						std::ofstream &file_rvec_abs,
 						std::ofstream &file_vo_loc,
+						std::ofstream &file_pc,
 						cv::Mat &T_GT,
-						double &scale_GT);
+						float &scale_GT);
 			
 			void run(cv::Mat &frame, std::string &frame_name, double &gpsT,
 						double &lat, double &lng, double &alt, 
@@ -58,16 +59,14 @@ namespace ORB_VISLAM
 						std::ofstream &file_rvec_abs,
 						std::ofstream &file_vo_loc);
 		
-			void save3Dpoints(std::ofstream &file_);
-			void savePointCloud();
 			void shutdown();
 			
 			//std::vector<int> nmatchesCCM, nmatches12, nmatches21;
 		private:
 			std::vector<cv::Mat> R_prev, t_prev, rvec_prev;
-			
 			AbsolutePose* absPosePtr;
 			
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr sCloud;
 			void saveMatrix(cv::Mat &Matrix, std::ofstream &file_);
 			void saveVOFile(cv::Mat &Tc_0, cv::Mat &rvec_0, 
 							cv::Mat &Tc_1, cv::Mat &rvec_1,
@@ -84,7 +83,10 @@ namespace ORB_VISLAM
 			double runTime;
     		
     		
+			void save3Dpoints(std::vector<cv::Mat> &p3ds, std::ofstream &file_);
+			//std::vector<cv::Mat> map_points;
 
+			void savePointCloud(std::vector<cv::Mat> &p3ds, std::string fname_);
 			std::thread* visThread;
 			std::thread* absPoseThread;
 	};

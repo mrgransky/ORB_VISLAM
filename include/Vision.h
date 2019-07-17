@@ -40,12 +40,11 @@ namespace ORB_VISLAM
 			
 			void Analyze(cv::Mat &rawImg, 
 							std::vector<cv::KeyPoint> &kp,
-							std::vector<std::pair<int,int>> &matches,
-							std::vector<cv::Point3f> &map_points);	
+							std::vector<std::pair<int,int>> &matches);	
 			float fps;
 			float FOCAL_LENGTH;
 			cv::Point2f pp;
-			double sc;
+			float sc;
 			
     		std::vector<cv::Mat> T_f, R_f, t_f, T_local;
     		
@@ -75,35 +74,30 @@ namespace ORB_VISLAM
 			cv::Mat T_loc_2 	= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_loc_3 	= cv::Mat::eye(4, 4, CV_32F);
 			
-			pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
-			std::vector<cv::Point3f> map_3D;
+			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+			std::vector<cv::Mat> map_3D;
+			cv::Mat visionMap;
+			
 		private:
     		std::vector<cv::Mat> R_f_prev, t_f_prev;
     		float vMIN_SCALE;
 			void get_ORB_kp(cv::Mat &rawImg, std::vector<cv::KeyPoint> &kp, cv::Mat &desc);
 			void get_AKAZE_kp(cv::Mat &rawImg, std::vector<cv::KeyPoint> &kp, cv::Mat &desc);
-			std::vector<cv::Point3f> get_map_points();
 			cv::Mat ref_img;
     		cv::Mat mK;
     		cv::Mat mDistCoef;
     		std::vector<cv::KeyPoint> ref_kp;
     		cv::Mat ref_desc;
     		
-			cv::Mat I_3x3 = cv::Mat::eye(3, 3, CV_64F);
-			cv::Mat I_4x4 = cv::Mat::eye(4, 4, CV_64F);
-			cv::Mat Z_3x1 = cv::Mat::zeros(3, 1, CV_64F);
-    		
+			cv::Mat Z_3x1, I_3x3, I_4x4;
 			cv::Mat R_f_prev_E, R_f_prev_0, R_f_prev_1, R_f_prev_2, R_f_prev_3;
-    		
-    		cv::Mat rvec_prev_E, rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;    		
-
+    		cv::Mat rvec_prev_E, rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;
     		cv::Mat t_f_prev_E, t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
     		
 			cv::Mat Essential_Matrix, Fundamental_Matrix, Homography_Matrix;
 			
-			cv::Mat P_prev 	= cv::Mat::eye(3, 4, CV_64F);
-			cv::Mat P 		= cv::Mat::zeros(3, 4, CV_64F);
-			
+			cv::Mat Rt_prev = cv::Mat::eye(3, 4, CV_32F);
+			cv::Mat Rt 		= cv::Mat::eye(3, 4, CV_32F);
 			int vWS;
 			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
@@ -120,13 +114,18 @@ namespace ORB_VISLAM
 			
 			void Reconstruction(std::vector<cv::Point2f> &dst, 
 								std::vector<cv::Point2f> &src, 
-								cv::Mat &P_prev, cv::Mat &P,
-								std::vector<cv::Point3f> &pt3D_loc);
-			
-			float getSSD(cv::Mat &block_1, cv::Mat &block_2);
-			
-			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point);
+								cv::Mat &Rt_prev, cv::Mat &Rt,
+								std::vector<cv::Mat> &pt3D_loc);
 
+			void setGloabalMapPoints(std::vector<cv::Mat> &p3D_loc, cv::Mat &R_, cv::Mat &t_);
+			
+			void GlobalMapPoints(std::vector<cv::Mat> &p3D_loc, 
+								cv::Mat &R_, cv::Mat &t_, 
+								cv::Mat &global_pts);
+			
+									
+			float getSSD(cv::Mat &block_1, cv::Mat &block_2);			
+			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point);
 			void getMatches(cv::Mat img_1, std::vector<cv::KeyPoint> keyP1, 
 							cv::Mat img_2, std::vector<cv::KeyPoint> keyP2,	
 							std::vector<std::pair<int,int>> &matches);
@@ -137,14 +136,9 @@ namespace ORB_VISLAM
 											std::vector <std::pair<int,int>> &m_12,
 											std::vector <std::pair<int,int>> &m_21);
 											
-			void Point3D_2_Mat(cv::Point3f &pt, cv::Mat &mat);
-			cv::Point3f Mat_2_Point3D(cv::Mat &mat);
-			
 			cv::Mat getHomography(	const std::vector<cv::Point2f> &p_ref, 
 									const std::vector<cv::Point2f> &p_mtch);
-			//void PoseFromHomographyMatrix(cv::Mat &H);
-
-											
+									
 			void essential_matrix_inliers(std::vector<cv::Point2f> &src, 
 											std::vector<cv::Point2f> &dst, 
 											std::vector<int> &ref_kp_idx, 
