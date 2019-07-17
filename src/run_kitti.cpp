@@ -158,8 +158,8 @@ int main( int argc, char** argv )
 		return -1; 
 	}
 	//Mat img;
-	string seqPath = string(argv[1]) + "sequences/05";
-	string GT_Path = string(argv[1]) + "poses/05.txt";
+	string seqPath = string(argv[1]) + "sequences/00";
+	string GT_Path = string(argv[1]) + "poses/00.txt";
 	
 	// improt ground truth:
 	vector<Mat> T_GT;
@@ -174,7 +174,7 @@ int main( int argc, char** argv )
     int nImages = vTimestamps.size();
     
     
-    float frame_scale = 0.74f;
+    float frame_scale = 0.5f;
     int window_sz_BM 	= 3;
     float ssd_th 		= 12.0f;
     float ssd_ratio_th 	= 0.7f;
@@ -230,7 +230,6 @@ int main( int argc, char** argv )
 	vo_loc << fixed;
 	vo_loc << "sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,E_rvec_x,E_rvec_y,E_rvec_z,E_R00,E_R01,E_R02,E_tx,E_R10,E_R11,E_R12,E_ty,E_R20,E_R21,E_R22,E_tz" << endl;
 
-
 	char filename[400];
 	clock_t tStart = clock();
 	
@@ -256,7 +255,7 @@ int main( int argc, char** argv )
 		{
 			cvtColor(img, img, CV_GRAY2BGR);
 		}
-		mySLAM.run(img, frame_name, f_vo, f_gt, f_rvec_abs, vo_loc, f_pc,
+		mySLAM.run(img, frame_name, f_vo, f_gt, f_rvec_abs, vo_loc,
 					T_GT[keyIMG[ni]], scale_GT[keyIMG[ni]]);
 	}
 	clock_t tEnd = clock();
@@ -264,6 +263,8 @@ int main( int argc, char** argv )
 	runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
 	cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
 	
+	string pc_file_name = "point_cloud.pcd";
+	mySLAM.savePointCloud(pc_file_name);
 	//mySLAM.shutdown();
 	return 0;
 }

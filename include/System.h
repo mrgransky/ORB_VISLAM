@@ -47,7 +47,6 @@ namespace ORB_VISLAM
 						std::ofstream &file_gt, 
 						std::ofstream &file_rvec_abs,
 						std::ofstream &file_vo_loc,
-						std::ofstream &file_pc,
 						cv::Mat &T_GT,
 						float &scale_GT);
 			
@@ -60,13 +59,12 @@ namespace ORB_VISLAM
 						std::ofstream &file_vo_loc);
 		
 			void shutdown();
-			
+			void savePointCloud(std::string fname_);
 			//std::vector<int> nmatchesCCM, nmatches12, nmatches21;
 		private:
 			std::vector<cv::Mat> R_prev, t_prev, rvec_prev;
 			AbsolutePose* absPosePtr;
 			
-			pcl::PointCloud<pcl::PointXYZRGB>::Ptr sCloud;
 			void saveMatrix(cv::Mat &Matrix, std::ofstream &file_);
 			void saveVOFile(cv::Mat &Tc_0, cv::Mat &rvec_0, 
 							cv::Mat &Tc_1, cv::Mat &rvec_1,
@@ -86,7 +84,6 @@ namespace ORB_VISLAM
 			void save3Dpoints(std::vector<cv::Mat> &p3ds, std::ofstream &file_);
 			//std::vector<cv::Mat> map_points;
 
-			void savePointCloud(std::vector<cv::Mat> &p3ds, std::string fname_);
 			std::thread* visThread;
 			std::thread* absPoseThread;
 	};

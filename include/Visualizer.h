@@ -48,17 +48,16 @@ namespace ORB_VISLAM
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
 						std::vector<std::pair<int,int>> &matches,
-						cv::Mat &matrix_3d,
+						cv::Mat &loc3Dpts,
 						std::string &frame_name);
 						
-			
+			std::vector<cv::Mat> vMAT, vMap;
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
 			cv::Mat vTgt, vTcam_E, vTcam_0, vTcam_1, vTcam_2, vTcam_3;
-			cv::Mat vPT3D, gPT3D;
+			cv::Mat vglob;
 			pcl::PointCloud<pcl::PointXYZ>::Ptr vCloud;
-			std::vector<cv::Mat> vMAT, vMap;
 			void getGlobalPTs3D(cv::Mat &loc, cv::Mat &glob);
 
 			std::mutex visualizerMutex;
@@ -68,7 +67,6 @@ namespace ORB_VISLAM
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
-			void drawPC(std::vector<cv::Mat> &pcVec);
 			void drawPC();
 			
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);

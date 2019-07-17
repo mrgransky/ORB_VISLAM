@@ -30,8 +30,6 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 	vTcam_3 	= T_cam_3;
 	vCloud		= cloud;
 	
-	
-	
 	vFPS 	= fps;
 	vScale	= scale;
 	
@@ -99,7 +97,7 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 void Visualizer::show(Mat &frame, 
 			vector<KeyPoint> &kp, 
 			vector<pair<int,int>> &matches,
-			Mat &matrix_3d,
+			Mat &loc3Dpts,
 			string &frame_name)
 {
 	vImg 		= frame;
@@ -116,20 +114,14 @@ void Visualizer::show(Mat &frame,
 	stringstream s_img, s_imgR;
 	s_img 	<< vImg_name;
 	s_imgR 	<< vImgR_name;
-	
-	
+		
 	draw_KP(vImgScaled, kp);
 	draw_matches(vImgScaled, kp, matches);
-	
-	vPT3D		= matrix_3d.clone();
-	
+
 	Mat vloc;
-	//matrix_3d.copyTo(vloc);
-	vloc = matrix_3d.clone();
-	Mat vglob(vloc.rows, vloc.cols, vloc.type());
+	loc3Dpts.copyTo(vloc);
+	vglob = Mat::zeros(vloc.rows, vloc.cols, vloc.type());
 	getGlobalPTs3D(vloc, vglob);
-	
-	vMap.push_back(vglob);
 	
 	cv::putText(vImgScaled, s_imgR.str(),
 				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
@@ -152,26 +144,10 @@ void Visualizer::getGlobalPTs3D(Mat &loc, Mat &glob)
 
 	for(int j = 0; j < loc.cols; j++)
 	{
-		/*cout 	<< "\n\nloc[" << loc.rows << "," << loc.cols 
-				<< "]\tc[" << j << "] = \t" << loc.col(j).t()<< endl;*/
-		Mat temp = ( RR_ * loc.col(j)) + tt_;
-		//cout << "temp =\t\t" <<temp.t() << endl;
-		temp.copyTo(glob.rowRange(0,3).col(j));
-		/*gPT3D.at<float>(0,j) = temp.at<float>(0);
-		gPT3D.at<float>(1,j) = temp.at<float>(1);
-		gPT3D.at<float>(2,j) = temp.at<float>(2);*/
-		//gPT3D.col(j) = temp;
-			
-		/*cout 	<< "glob[" << glob.rows << "," << glob.cols 
-				<< "]\tc[" << j << "] = \t" << glob.col(j).t()<< endl;*/
-	}
-	//cout << "--------------------------------------------------"<< endl;
-		/*cout 	<< "\n\nvPT3D r,c :\t" << vPT3D.rows << "," << vPT3D.cols
-				<<"\tvs. gPts r,c :\t" << gPT3D.rows << "," << gPT3D.cols
-				<< endl;*/
-		
+		Mat temp = (RR_ * loc.col(j)) + tt_;
+		temp.copyTo(glob.col(j));
+	}	
 }
-
 
 void Visualizer::run()
 {
@@ -187,7 +163,7 @@ void Visualizer::run()
 void Visualizer::PCL_()
 {
 	// visualization
-	PCLVisualizer viz ("Point Cloud");
+	PCLVisualizer viz ("Point_Cloud");
 	viz.setBackgroundColor(0,0,0);
 	
 	// original cloud -> blue
@@ -205,7 +181,7 @@ void Visualizer::PCL_()
 void Visualizer::openCV_()
 {
 	
-	std::string frameWinName = "frames";
+	std::string frameWinName = "Image_Frames";
 	if(!vImg.empty())
 	{	
 		while(hasFrame)
@@ -225,7 +201,7 @@ void Visualizer::openGL_()
 	float width 	= 1600;
     float heigth 	= 1000;
     
-    pangolin::CreateWindowAndBind("ORB_VISLAM", width, heigth);
+    pangolin::CreateWindowAndBind("AKAZE_VISLAM", width, heigth);
     
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -245,7 +221,6 @@ void Visualizer::openGL_()
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	vector<Triplet>	vertices_cam_Ess;
-	//vector<Mat> vMap;
 	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
 	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
@@ -343,7 +318,7 @@ void Visualizer::openGL_()
 		vertices_cam_Ess.push_back(current_cam_pt_E);
 		draw_path(vertices_cam_Ess, .81,.06,.08);
 		// ############ Essential Matrix solution ############
-		
+		vMap.push_back(vglob);
 		drawPC();
 		
 		//gen_dummy();
@@ -351,23 +326,6 @@ void Visualizer::openGL_()
 		pangolin::FinishFrame();
 	}
 }
-
-void Visualizer::drawPC(vector<Mat> &pcVec)
-{
-	glPointSize(1.9f);
-	glColor3f(0,0,0);
-	glBegin(GL_POINTS);
-	for(size_t i = 0; i < pcVec.size(); i++)
-	{
-		//cout << "Draw r,c [" << i <<"] = \t" <<pcVec[i].rows << " , " << pcVec[i].cols<< endl;
-		for(int j = 0; j < pcVec[i].cols; j++)
-		{
-			glVertex3f(pcVec[i].at<float>(0,j), pcVec[i].at<float>(1,j), pcVec[i].at<float>(2,j));
-		}
-	}
-	glEnd();
-}
-
 
 void Visualizer::drawPC()
 {
@@ -384,7 +342,6 @@ void Visualizer::drawPC()
 		}
 	}
 	glEnd();
-	//glFlush();
 }
 
 void Visualizer::gen_dummy()

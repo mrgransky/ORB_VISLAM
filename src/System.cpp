@@ -20,8 +20,6 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	
 	frame_avl = true;
 	
-	sCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
-	
 	absPosePtr 		= new AbsolutePose();
 	// init vision class:
 	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th, minFeat, minScale);
@@ -53,7 +51,6 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	cout << "\t\t\t\tSYSTEN VI"															<< endl;
 	cout << "#########################################################################" << endl;
 	frame_avl = true;
-	sCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 	// initialize absPose class:
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
@@ -84,7 +81,6 @@ void System::run(Mat &raw_frame, string &frame_name,
 					ofstream &file_gt,
 					ofstream &file_rvec_abs,
 					ofstream &file_vo_loc,
-					ofstream &file_pc,
 					Mat &T_GT, float &scale_GT)
 {
 	vector<KeyPoint> KP;
@@ -99,9 +95,6 @@ void System::run(Mat &raw_frame, string &frame_name,
 	saveMatrix(T_GT, file_gt);
 	saveMatrix(absPosePtr->rvec_abs, file_rvec_abs);
 	
-	
-	//save3Dpoints(sMap, file_pc);
-	//savePointCloud(sMap, string("cloud.pcd"));
 	
 	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
 				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
@@ -166,27 +159,24 @@ void System::save3Dpoints(vector<Mat> &p3ds, ofstream &file_)
 	}
 }
 
-void System::savePointCloud(vector<Mat> &p3ds, string fname_)
+void System::savePointCloud(string fname_)
 {
-	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr sCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-	for(size_t i = 0; i < p3ds.size(); i++)
+	pcl::PointCloud<pcl::PointXYZ>::Ptr sCloud(new pcl::PointCloud<pcl::PointXYZ>());
+	cout << "visualizerPtr->vMap.size() = \t" << visualizerPtr->vMap.size() << endl;
+	
+	for(size_t i = 0; i < visualizerPtr->vMap.size(); i++)
 	{
-		pcl::PointXYZRGB p;
-		uint8_t red 	= 200;
-		uint8_t green 	= 200;
-		uint8_t blue 	= 200;
+		for(int j = 0; j < visualizerPtr->vMap[i].cols; j++)
+		{
+			pcl::PointXYZ p;
 
-		p.x = p3ds[i].at<float>(0);
-		p.y = p3ds[i].at<float>(1);
-		p.z = p3ds[i].at<float>(2);
+			p.x = visualizerPtr->vMap[i].at<float>(0,j);
+			p.y = visualizerPtr->vMap[i].at<float>(1,j);
+			p.z = visualizerPtr->vMap[i].at<float>(2,j);
 		
-		p.r = red;
-		p.g = green;
-		p.b = blue;
-		
-		sCloud->push_back(p);
+			sCloud->push_back(p);
+		}	
 	}
-
 	if (sCloud->size() != 0)
 	{
 		cout 	<< "cloud [w,h,sz] =\t" << sCloud->width 
