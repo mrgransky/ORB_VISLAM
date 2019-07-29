@@ -34,18 +34,16 @@ namespace ORB_VISLAM
 		public:	
 			Vision(const std::string &settingFilePath,
 						int win_sz, float ssd_th, float ssd_ratio_th, 
-						size_t minFeatures, float minScale);
+						size_t minFeatures, float minScale, float distTo3DPts, bool downScale);
 			
 			cv::Mat IMG_ = cv::Mat::zeros(640, 480, CV_8UC3);
 			
 			void Analyze(cv::Mat &rawImg, 
 							std::vector<cv::KeyPoint> &kp,
 							std::vector<std::pair<int,int>> &matches);	
-			float fps;
-			float FOCAL_LENGTH;
+			float fps, foc, sc;
+    		float front3DPtsOPCV, front3DPtsOWN;
 			cv::Point2f pp;
-			float sc;
-			
     		std::vector<cv::Mat> T_f, R_f, t_f, T_local;
     		
     		cv::Mat R_f_E, R_f_0, R_f_1, R_f_2, R_f_3;
@@ -80,12 +78,13 @@ namespace ORB_VISLAM
 			
 		private:
     		std::vector<cv::Mat> R_f_prev, t_f_prev;
-    		float vMIN_SCALE;
+    		float vMIN_SCALE, vdistTh_3DPts;
+    		bool vDownScaled;
+    		
 			void get_ORB_kp(cv::Mat &rawImg, std::vector<cv::KeyPoint> &kp, cv::Mat &desc);
 			void get_AKAZE_kp(cv::Mat &rawImg, std::vector<cv::KeyPoint> &kp, cv::Mat &desc);
 			cv::Mat ref_img;
-    		cv::Mat mK;
-    		cv::Mat mDistCoef;
+    		cv::Mat mK, mK_inv, mDistCoef;
     		std::vector<cv::KeyPoint> ref_kp;
     		cv::Mat ref_desc;
     		
@@ -94,16 +93,28 @@ namespace ORB_VISLAM
     		cv::Mat rvec_prev_E, rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;
     		cv::Mat t_f_prev_E, t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
     		
-			cv::Mat Essential_Matrix, Fundamental_Matrix, Homography_Matrix;
 			
 			cv::Mat Rt_prev = cv::Mat::eye(3, 4, CV_32F);
 			cv::Mat Rt 		= cv::Mat::eye(3, 4, CV_32F);
+
+			cv::Mat Rt_0_prev 	= cv::Mat::eye(3, 4, CV_32F);
+			cv::Mat Rt_0		= cv::Mat::eye(3, 4, CV_32F);
+
+			cv::Mat Rt_1_prev 	= cv::Mat::eye(3, 4, CV_32F);
+			cv::Mat Rt_1 		= cv::Mat::eye(3, 4, CV_32F);
+
+			cv::Mat Rt_2_prev 	= cv::Mat::eye(3, 4, CV_32F);
+			cv::Mat Rt_2 		= cv::Mat::eye(3, 4, CV_32F);
+
+			cv::Mat Rt_3_prev 	= cv::Mat::eye(3, 4, CV_32F);
+			cv::Mat Rt_3 		= cv::Mat::eye(3, 4, CV_32F);
+			
 			int vWS;
 			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
-			void extract3DPoints(std::vector<cv::Point2f> &src, 
-								std::vector<cv::Point2f> &dst, 
-								cv::Mat &P);
+			void getEssentialMatrix(std::vector<cv::Mat> &n_src, 
+									std::vector<cv::Mat> &n_dst, 
+									cv::Mat &E);
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_, cv::Mat &T_);
 			
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp,
@@ -112,17 +123,31 @@ namespace ORB_VISLAM
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp, 
     					cv::Mat &desc, 	std::vector<std::pair<int,int>> &match_idx);
 			
-			void Reconstruction(std::vector<cv::Point2f> &dst, 
-								std::vector<cv::Point2f> &src, 
+			void Reconstruction(std::vector<cv::Point2f> &src, 
+								std::vector<cv::Point2f> &dst, 
 								cv::Mat &Rt_prev, cv::Mat &Rt,
 								std::vector<cv::Mat> &pt3D_loc);
 
+			void Extract3DPts(std::vector<cv::Mat> &src, std::vector<cv::Mat> &dst, 
+								cv::Mat &Rt, cv::Mat &Points4D);
+			
+			void SetR_t(cv::Mat &R_, cv::Mat &t_, cv::Mat &Rt_);
+			void ChooseCorrectPose(std::vector<float> &good_vec, 
+						std::vector<cv::Mat> &Rt_vec, 
+						cv::Mat &R_, cv::Mat &t_);
+			void Normalize2DPts(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst,
+								std::vector<cv::Mat> &src_normalized, 
+								std::vector<cv::Mat> &dst_normalized);
+			
+			void Normalize2DPts(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst,
+								std::vector<cv::Point2f> &src_normalized, 
+								std::vector<cv::Point2f> &dst_normalized);
+								
 			void setGloabalMapPoints(std::vector<cv::Mat> &p3D_loc, cv::Mat &R_, cv::Mat &t_);
 			
 			void GlobalMapPoints(std::vector<cv::Mat> &p3D_loc, 
 								cv::Mat &R_, cv::Mat &t_, 
 								cv::Mat &global_pts);
-			
 									
 			float getSSD(cv::Mat &block_1, cv::Mat &block_2);			
 			cv::Mat getBlock(cv::Mat &img, cv::Point2f &point);
@@ -130,7 +155,19 @@ namespace ORB_VISLAM
 							cv::Mat img_2, std::vector<cv::KeyPoint> keyP2,	
 							std::vector<std::pair<int,int>> &matches);
 			
-			void decomposeEToRANDt(cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t1, cv::Mat &t2);
+			void decomE(cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t1, cv::Mat &t2);
+			
+			void get_correct_pose(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst, 
+								cv::Mat &R1, cv::Mat &R2, cv::Mat &t, 
+								cv::Mat &R_correct, cv::Mat &t_correct);
+								
+			void calcGlobalPose(cv::Mat &R_local, cv::Mat &t_local);
+			void getDummy(std::vector<cv::Point2f> &src, 
+							std::vector<cv::Point2f> &dst, 
+							std::vector<int> &ref_kp_idx, 
+							std::vector<int> &kp_idx, 
+							std::vector<std::vector<cv::DMatch>> &all_matches,
+							std::vector<std::pair<int,int>> &match_idx);
 			
 			std::vector<std::pair<int,int>> crossCheckMatching(	
 											std::vector <std::pair<int,int>> &m_12,
@@ -153,33 +190,35 @@ namespace ORB_VISLAM
 											std::vector<std::vector<cv::DMatch>> &all_matches,
 											std::vector<std::pair<int,int>> &match_idx);
 			
-			void fundamental_matrix_inliers(std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst, 
-											std::vector<int> &ref_kp_idx, 
-											std::vector<int> &kp_idx, 
-											std::vector<std::vector<cv::DMatch>> &all_matches,
-											std::vector<std::pair<int,int>> &match_idx);
 			
 			void PoseFromHomographyMatrix(	std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst);
+											std::vector<cv::Point2f> &dst,
+											cv::Mat &H);
 			
 			void PoseFromEssentialMatrix(	std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst);
+											std::vector<cv::Point2f> &dst,
+											cv::Mat &E);
 			
 			void PoseFromFundamentalMatrix(	std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst);
+											std::vector<cv::Point2f> &dst,
+											cv::Mat &F);
 			
-			void triangulateFcn(std::vector<cv::Point2f> &src, 
-								std::vector<cv::Point2f> &dst, 
-								cv::Mat &P, cv::Mat &P1, double reprojErr);
+			void triangulateMyPoints(std::vector<cv::Point2f> &src, 
+									std::vector<cv::Point2f> &dst, 
+									cv::Mat &Rt, float &acceptedPts);
 			
-			void getExtrinsic(cv::Mat &skew, cv::Mat &P, cv::Mat &skewXP);					
+			
+			void GetPose(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst, 
+								cv::Mat &E);
+
 			void getSkewMatrix(cv::Point2f &pt2D, cv::Mat &skew);
+			void getSkewMatrix(cv::Mat &mat, cv::Mat &skew);
 			
+			void get_info(cv::Mat &matrix, std::string matrix_name);
 			const double akaze_thresh = 3e-4; 
     		// AKAZE detection threshold to locate about 1000 keypoints
 
-			
+			void pt2D_to_mat(cv::Point2f &pt2d, cv::Mat &pt2dMat);
 			// Nearest-neighbour matching ratio
 			const double nn_match_ratio = 0.7f; 
 			

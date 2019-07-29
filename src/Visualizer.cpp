@@ -239,7 +239,7 @@ void Visualizer::openGL_()
 		{
 			KeyFrames.push_back(pT_gt);
 		}
-		draw(pT_gt, .1, 1, .1);
+		draw(pT_gt, .7, .4, .1);
 		//draw_KF(KeyFrames);	
 		
 		//s_cam.Follow(pT_gt);
@@ -247,9 +247,7 @@ void Visualizer::openGL_()
 		current_gt_pt.x = vTgt.at<float>(0,3);
 		current_gt_pt.y = vTgt.at<float>(1,3);
 		current_gt_pt.z = vTgt.at<float>(2,3);
-		
 		vertices_gt.push_back(current_gt_pt);
-		
 		draw_path(vertices_gt, .1, .42, .98);
 		
 		counter_KF++;
@@ -262,40 +260,39 @@ void Visualizer::openGL_()
 		pangolin::OpenGlMatrix pTc_0;
 		pTc_0.SetIdentity();
 		pTc_0 	= getCurrentPose(vTcam_0);
-		//draw(pTc_0,.91,.02,.01); // red
+		draw(pTc_0,.1,.82,.81); // cyan
 		//s_cam.Follow(pTc_0);
 		current_cam_pt_0.x = vTcam_0.at<float>(0,3);
 		current_cam_pt_0.y = vTcam_0.at<float>(1,3);
 		current_cam_pt_0.z = vTcam_0.at<float>(2,3);
 		vertices_cam_0.push_back(current_cam_pt_0);
-		draw_path(vertices_cam_0, .2,.2,.2);
+		draw_path(vertices_cam_0, .7,.71,.1);
 		
 		pangolin::OpenGlMatrix pTc_1;
 		pTc_1.SetIdentity();
 		pTc_1 	= getCurrentPose(vTcam_1);
-		//draw(pTc_1, .08,.84,.2); // green
+		draw(pTc_1, 1,.1,.1); // red
 		current_cam_pt_1.x = vTcam_1.at<float>(0,3);
 		current_cam_pt_1.y = vTcam_1.at<float>(1,3);
 		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
 		vertices_cam_1.push_back(current_cam_pt_1);
 		draw_path(vertices_cam_1, .6, .2, .81);
 	
-	
 		pangolin::OpenGlMatrix pTc_2;
 		pTc_2.SetIdentity();
 		pTc_2 	= getCurrentPose(vTcam_2);
-		//draw(pTc_2, .01, .01, .01); // black
+		draw(pTc_2, .01, .01, .01); // black
 		current_cam_pt_2.x = vTcam_2.at<float>(0,3);
 		current_cam_pt_2.y = vTcam_2.at<float>(1,3);
 		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
 		vertices_cam_2.push_back(current_cam_pt_2);
-		draw_path(vertices_cam_2, .95,.03, .01);
+		draw_path(vertices_cam_2, .95,.93, .01);
 		
 		
 		pangolin::OpenGlMatrix pTc_3;
 		pTc_3.SetIdentity();
 		pTc_3 	= getCurrentPose(vTcam_3);
-		//draw(pTc_3, .01,.01,.92); // blue
+		draw(pTc_3, .01,.01,.92); // blue
 		current_cam_pt_3.x = vTcam_3.at<float>(0,3);
 		current_cam_pt_3.y = vTcam_3.at<float>(1,3);
 		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
@@ -310,7 +307,7 @@ void Visualizer::openGL_()
 		pTc_Ess.SetIdentity();
 
 		pTc_Ess 	= getCurrentPose(vTcam_E);
-		draw(pTc_Ess, 0.95, 0, 0.71); // pink
+		draw(pTc_Ess, 0.9, 0.8, 0.1); // yellow
 		// camera:
 		current_cam_pt_E.x = vTcam_E.at<float>(0,3);
 		current_cam_pt_E.y = vTcam_E.at<float>(1,3);
@@ -321,8 +318,6 @@ void Visualizer::openGL_()
 		vMap.push_back(vglob);
 		drawPC();
 		
-		//gen_dummy();
-		//draw_dummy();
 		pangolin::FinishFrame();
 	}
 }
@@ -340,40 +335,6 @@ void Visualizer::drawPC()
 		{
 			glVertex3f(vMap[i].at<float>(0,j), vMap[i].at<float>(1,j), vMap[i].at<float>(2,j));
 		}
-	}
-	glEnd();
-}
-
-void Visualizer::gen_dummy()
-{
-	srand (static_cast <unsigned> (time(0)));
-	for (size_t i = 0; i < 300; i++)
-	{
-		float LO = -15.0f;
-		float HI = 15.0;
-		Mat mat(3,1, CV_32F);
-		mat.at<float>(0) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
-		mat.at<float>(1) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
-		mat.at<float>(2) = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));;
-		cout << "\nmat =\t" <<mat.t()<< endl;
-		vMAT.push_back(mat);
-	}
-	//cout << "dummy sz =\t" << vMAT.size() << endl;
-}
-
-void Visualizer::draw_dummy()
-{	
-	//srand (static_cast <unsigned> (time(0)));
-	float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	cout << "rgb =\t"<<r<<" , "<<g<<" , "<<b<< endl;
-	glColor3f(r,g,b);
-	glPointSize(.8f);
-	glBegin(GL_POINTS);
-	for (size_t i = 0; i < vMAT.size(); i++)
-	{
-		glVertex3f(vMAT[i].at<float>(0), vMAT[i].at<float>(1), vMAT[i].at<float>(2));
 	}
 	glEnd();
 }

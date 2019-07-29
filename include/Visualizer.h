@@ -21,6 +21,7 @@
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include <thread>
 
+
 namespace ORB_VISLAM
 {
 	class Visualizer
@@ -31,17 +32,13 @@ namespace ORB_VISLAM
 									cv::Mat T_cam_2, cv::Mat T_cam_3, 
 									int fps, float scale, bool &frame_avl,
 									pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
-			
 			struct Triplet;
 			void run();
-			
 			cv::Mat vImg 	= cv::Mat::zeros(640, 480, CV_8UC3);
 			std::string vImg_name;
 			
 			cv::Mat vImgR 	= cv::Mat::zeros(640, 480, CV_8UC3);
 			std::string vImgR_name = "NULL";
-			
-			
 			cv::Mat vImgScaled = cv::Mat::zeros(640, 480, CV_8UC3);
 			std::vector<cv::KeyPoint> vKP_ref;
 
@@ -50,8 +47,7 @@ namespace ORB_VISLAM
 						std::vector<std::pair<int,int>> &matches,
 						cv::Mat &loc3Dpts,
 						std::string &frame_name);
-						
-			std::vector<cv::Mat> vMAT, vMap;
+			std::vector<cv::Mat> vMap;
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
@@ -72,9 +68,7 @@ namespace ORB_VISLAM
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);
 			void draw_matches(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp,
 								std::vector<std::pair<int,int>> &matches);
-			void draw_dummy();
-			void gen_dummy();
-			
+
 			void drawWRLD();
 			void openCV_();
 			void openGL_();

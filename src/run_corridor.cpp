@@ -63,8 +63,7 @@ int main( int argc, char** argv )
 	}
 
 	Mat I_3x3 = Mat::eye(3, 3, CV_64F);
-	Mat I_4x4 = Mat::eye(4, 4, CV_64F);
-	
+	Mat I_4x4 = Mat::eye(4, 4, CV_32F);
 	Mat Z_3x1 = Mat::zeros(3, 1, CV_64F);
 	
 	string imgFile = string(argv[1])+"frames/rgb.txt"; // open rgb.txt from the img folder
@@ -77,7 +76,7 @@ int main( int argc, char** argv )
 
 	// improt ground truth:
 	vector<Mat> T_GT;
-	vector<double> scale_GT;
+	vector<float> scale_GT;
 	for(int i = 0; i < nImages; i++)
 	{
 		T_GT.push_back(I_4x4.clone());
@@ -94,8 +93,6 @@ int main( int argc, char** argv )
     float ssd_ratio_th	= 0.4f;
 	size_t MIN_NUM_FEAT = 8.0;
     float MIN_GT_SCALE 	= 0.1f;
-    
-    Mat T_gt = Mat::eye(4, 4, CV_64F);
 	
 	ORB_VISLAM::System mySLAM(argv[2], frame_scale, 
 								window_sz_BM, ssd_th, ssd_ratio_th, 
@@ -170,6 +167,8 @@ int main( int argc, char** argv )
     runTime = (double)(tEnd - tStart)/CLOCKS_PER_SEC;
     
     cout << "\nAlgorithm time: "<< runTime << " sec.\n" << endl;
+	string pc_file_name = string(argv[1]) + "point_cloud.pcd";
+	mySLAM.savePointCloud(pc_file_name);
     //mySLAM.shutdown();
 	return 0;
 }

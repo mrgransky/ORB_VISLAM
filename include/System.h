@@ -33,11 +33,11 @@ namespace ORB_VISLAM
 		public:
 			System( const std::string &settingFilePath, float frameDownScale,
 						int win_sz, float ssd_th, float ssd_ratio_th, 
-						size_t minFeat, float minScale);
+						size_t minFeat, float minScale, float distTo3DPts);
 			
 			System( const std::string &settingFilePath, float frameDownScale,
 					int win_sz, float ssd_th, float ssd_ratio_th, 
-					size_t minFeat, float minScale,
+					size_t minFeat, float minScale, float distTo3DPts,
 					double &ref_lat, double &ref_lng, double &ref_alt);
 					
 			~System();
@@ -66,6 +66,10 @@ namespace ORB_VISLAM
 			AbsolutePose* absPosePtr;
 			
 			void saveMatrix(cv::Mat &Matrix, std::ofstream &file_);
+			
+			void saveMatrix(cv::Mat &Matrix, float &scale, float &frontOPCV, 
+							float &frontOWN, std::ofstream &file_);
+			
 			void saveVOFile(cv::Mat &Tc_0, cv::Mat &rvec_0, 
 							cv::Mat &Tc_1, cv::Mat &rvec_1,
 							cv::Mat &Tc_2, cv::Mat &rvec_2,

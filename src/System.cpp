@@ -11,7 +11,8 @@ namespace ORB_VISLAM
 
 System::System(	const string &settingFilePath, float frameDownScale,
 						int win_sz, float ssd_th, 
-						float ssd_ratio_th, size_t minFeat, float minScale)
+						float ssd_ratio_th, size_t minFeat, 
+						float minScale, float distTo3DPts)
 {
 	cout << "" << endl;
 	cout << "#########################################################################" << endl;
@@ -22,7 +23,8 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	
 	absPosePtr 		= new AbsolutePose();
 	// init vision class:
-	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th, minFeat, minScale);
+	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th, 
+									minFeat, minScale, distTo3DPts, false);
 	// initialize visualizer class
 	
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, 	absPosePtr->T_abs,
@@ -40,7 +42,8 @@ System::System(	const string &settingFilePath, float frameDownScale,
 
 /* ###################### CIVIT DATASET constructor ###################### */
 System::System(	const string &settingFilePath, float frameDownScale,
-				int win_sz, float ssd_th, float ssd_ratio_th, size_t minFeat, float minScale,
+				int win_sz, float ssd_th, float ssd_ratio_th, 
+				size_t minFeat, float minScale, float distTo3DPts,
 				double &ref_lat, 
 				double &ref_lng, 
 				double &ref_alt)/*:	init_absPose(ref_lat, ref_lng, ref_alt),
@@ -55,8 +58,8 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	absPosePtr 		= new AbsolutePose(ref_lat, ref_lng, ref_alt);
 	
 	// init vision class:
-	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th, minFeat, minScale);
-
+	visionPtr		= new Vision(settingFilePath, win_sz, ssd_th, ssd_ratio_th, 
+									minFeat, minScale, distTo3DPts, false);
 	// initialize visualizer class
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, 	absPosePtr->T_abs, 
 														visionPtr->T_cam_E,
@@ -79,7 +82,7 @@ System::~System()
 void System::run(Mat &raw_frame, string &frame_name, 
 					ofstream &file_vo,
 					ofstream &file_gt,
-					ofstream &file_rvec_abs,
+					ofstream &file_util,
 					ofstream &file_vo_loc,
 					Mat &T_GT, float &scale_GT)
 {
@@ -93,9 +96,11 @@ void System::run(Mat &raw_frame, string &frame_name,
 	
 	absPosePtr->set(T_GT);
 	saveMatrix(T_GT, file_gt);
-	saveMatrix(absPosePtr->rvec_abs, file_rvec_abs);
-	
-	
+	saveMatrix(absPosePtr->rvec_abs, scale_GT,
+				visionPtr->front3DPtsOPCV, 
+				visionPtr->front3DPtsOWN, 
+				file_util);
+				
 	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
 				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
 				visionPtr->T_loc_2, visionPtr->rvec_loc_2,
@@ -116,7 +121,7 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 					double &roll, double &pitch, double &heading, 
 					ofstream &file_vo, 
 					ofstream &file_gt, 
-					ofstream &file_rvec_abs,
+					ofstream &file_util,
 					ofstream &file_vo_loc)
 {
 	vector<KeyPoint> KP;	
@@ -131,7 +136,10 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 	//visionPtr->sc = 1.0;
 	
 	saveMatrix(absPosePtr->T_abs, file_gt);
-	saveMatrix(absPosePtr->rvec_abs, file_rvec_abs);
+	saveMatrix(absPosePtr->rvec_abs, absPosePtr->AbsScale, 
+				visionPtr->front3DPtsOPCV, 
+				visionPtr->front3DPtsOWN, 
+				file_util);
 	
 	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
 				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
@@ -209,6 +217,26 @@ void System::saveMatrix(Mat &Matrix, ofstream &file_)
 	}
 }
 
+void System::saveMatrix(Mat &Matrix, float &scale, float &frontOPCV, 
+						float &frontOWN, ofstream &file_)
+{
+	for(int r = 0; r < Matrix.rows; r++)
+	{
+		for(int c = 0; c < Matrix.cols; c++)
+		{
+			if (r == Matrix.rows-1 && c == Matrix.cols-1)
+			{
+				file_	<< setprecision(8)	<< Matrix.at<float>(r,c) 
+						<<","<< scale <<","<< frontOPCV <<","<< frontOWN << endl;
+			}
+			else 
+			{
+				file_	<< setprecision(8)	<< Matrix.at<float>(r,c) << ",";			
+			}
+		}
+	}
+}
+
 void System::saveVOFile(Mat &Tc_0, Mat &rvec_0, 
 						Mat &Tc_1, Mat &rvec_1, 
 						Mat &Tc_2, Mat &rvec_2, 
@@ -216,9 +244,9 @@ void System::saveVOFile(Mat &Tc_0, Mat &rvec_0,
 						Mat &Tc_E, Mat &rvec_E,						
 						ofstream &file_)
 {	
-	file_	<< setprecision(8)	<< rvec_0.at<double>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_0.at<double>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_0.at<double>(2,0) 	<< ","
+	file_	<< setprecision(8)	<< rvec_0.at<float>(0,0) 	<< ","
+			<< setprecision(8)	<< rvec_0.at<float>(1,0) 	<< ","
+			<< setprecision(8)	<< rvec_0.at<float>(2,0) 	<< ","
 			
 			<< setprecision(8)	<< Tc_0.at<float>(0,0) 		<< ","
 			<< setprecision(8)	<< Tc_0.at<float>(0,1) 		<< ","
@@ -235,9 +263,9 @@ void System::saveVOFile(Mat &Tc_0, Mat &rvec_0,
 			<< setprecision(8)	<< Tc_0.at<float>(2,2) 		<< ","
 			<< setprecision(8)	<< Tc_0.at<float>(2,3) 		<< ","
 					
-			<< setprecision(8)	<< rvec_1.at<double>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_1.at<double>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_1.at<double>(2,0) 	<< ","
+			<< setprecision(8)	<< rvec_1.at<float>(0,0) 	<< ","
+			<< setprecision(8)	<< rvec_1.at<float>(1,0) 	<< ","
+			<< setprecision(8)	<< rvec_1.at<float>(2,0) 	<< ","
 
 			<< setprecision(8)	<< Tc_1.at<float>(0,0) 		<< ","
 			<< setprecision(8)	<< Tc_1.at<float>(0,1) 		<< ","
@@ -254,9 +282,9 @@ void System::saveVOFile(Mat &Tc_0, Mat &rvec_0,
 			<< setprecision(8)	<< Tc_1.at<float>(2,2) 		<< ","
 			<< setprecision(8)	<< Tc_1.at<float>(2,3) 		<< ","
 			
-			<< setprecision(8)	<< rvec_2.at<double>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_2.at<double>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_2.at<double>(2,0) 	<< ","
+			<< setprecision(8)	<< rvec_2.at<float>(0,0) 	<< ","
+			<< setprecision(8)	<< rvec_2.at<float>(1,0) 	<< ","
+			<< setprecision(8)	<< rvec_2.at<float>(2,0) 	<< ","
 
 			<< setprecision(8)	<< Tc_2.at<float>(0,0) 		<< ","
 			<< setprecision(8)	<< Tc_2.at<float>(0,1) 		<< ","
@@ -273,9 +301,9 @@ void System::saveVOFile(Mat &Tc_0, Mat &rvec_0,
 			<< setprecision(8)	<< Tc_2.at<float>(2,2) 		<< ","
 			<< setprecision(8)	<< Tc_2.at<float>(2,3) 		<< ","
 			
-			<< setprecision(8)	<< rvec_3.at<double>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_3.at<double>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_3.at<double>(2,0) 	<< ","
+			<< setprecision(8)	<< rvec_3.at<float>(0,0) 	<< ","
+			<< setprecision(8)	<< rvec_3.at<float>(1,0) 	<< ","
+			<< setprecision(8)	<< rvec_3.at<float>(2,0) 	<< ","
 
 			<< setprecision(8)	<< Tc_3.at<float>(0,0) 		<< ","
 			<< setprecision(8)	<< Tc_3.at<float>(0,1) 		<< ","
@@ -293,9 +321,9 @@ void System::saveVOFile(Mat &Tc_0, Mat &rvec_0,
 			<< setprecision(8)	<< Tc_3.at<float>(2,3) 		<< ","
 			
 			
-			<< setprecision(8)	<< rvec_E.at<double>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_E.at<double>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_E.at<double>(2,0) 	<< ","
+			<< setprecision(8)	<< rvec_E.at<float>(0,0) 	<< ","
+			<< setprecision(8)	<< rvec_E.at<float>(1,0) 	<< ","
+			<< setprecision(8)	<< rvec_E.at<float>(2,0) 	<< ","
 
 			<< setprecision(8)	<< Tc_E.at<float>(0,0) 		<< ","
 			<< setprecision(8)	<< Tc_E.at<float>(0,1) 		<< ","

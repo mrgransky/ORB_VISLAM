@@ -129,17 +129,17 @@ int main( int argc, char** argv )
     LoadImages(imgFile, imgName, vTimestamps);
     int nImages = imgName.size();
 
-    float frame_scale 	= 0.32f;
+    float frame_scale 	= 0.48f;
     int window_sz_BM 	= 7;
     float ssd_th 		= 100.0f;
     float ssd_ratio_th 	= 0.6f;
     size_t MIN_NUM_FEAT = 8;
     float MIN_GT_SCALE = 0.0f;
-    //const int IMAGE_DOWNSAMPLE = 4; // downsample the image to speed up processing
+    float distTo3DPts = 70.0f;
 	
 	ORB_VISLAM::System mySLAM(argv[2], frame_scale, 
 								window_sz_BM, ssd_th, ssd_ratio_th, 
-								MIN_NUM_FEAT, MIN_GT_SCALE, 
+								MIN_NUM_FEAT, MIN_GT_SCALE, distTo3DPts,
 								geo.lat[0], geo.lng[0], geo.alt[0]);
 	
 	vector<size_t> keyIMG;
@@ -158,14 +158,15 @@ int main( int argc, char** argv )
 	string loc_vo_file 	= string(argv[1])	+ "VO_loc.txt";
 	
 	string gt_file 		= string(argv[1])	+ "T_GT.txt";
-	string rvec_file 	= string(argv[1])	+ "rvec_GT.txt";
+	string util_file 	= string(argv[1])	+ "util.txt";
 	
 	
-	ofstream f_vo, f_gt, f_rvec_abs, vo_loc;
+	
+	ofstream f_vo, f_gt, f_util, vo_loc, f_pc;
 	
 	f_vo.open(vo_file.c_str());
 	f_gt.open(gt_file.c_str());
-	f_rvec_abs.open(rvec_file.c_str());
+	f_util.open(util_file.c_str());
 	vo_loc.open(loc_vo_file.c_str());
 	
 	f_vo << fixed;
@@ -174,13 +175,11 @@ int main( int argc, char** argv )
 	f_gt << fixed;
 	f_gt << "T_00,T_01,T_02,T_03,T_10,T_11,T_12,T_13,T_20,T_21,T_22,T_23,T_30,T_31,T_32,T_33" << endl;
 
-	f_rvec_abs << fixed;
-	f_rvec_abs << "rvec_x,rvec_y,rvec_z" << endl;
+	f_util << fixed;
+	f_util << "rvecGTx,rvecGTy,rvecGTz,scale,front3DPtsOPCV,front3DPtsOWN" << endl;
 
 	vo_loc << fixed;
 	vo_loc << "sol0_rvec_x,sol0_rvec_y,sol0_rvec_z,sol0_R00,sol0_R01,sol0_R02,sol0_tx,sol0_R10,sol0_R11,sol0_R12,sol0_ty,sol0_R20,sol0_R21,sol0_R22,sol0_tz,sol1_rvec_x,sol1_rvec_y,sol1_rvec_z,sol1_R00,sol1_R01,sol1_R02,sol1_tx,sol1_R10,sol1_R11,sol1_R12,sol1_ty,sol1_R20,sol1_R21,sol1_R22,sol1_tz,sol2_rvec_x,sol2_rvec_y,sol2_rvec_z,sol2_R00,sol2_R01,sol2_R02,sol2_tx,sol2_R10,sol2_R11,sol2_R12,sol2_ty,sol2_R20,sol2_R21,sol2_R22,sol2_tz,sol3_rvec_x,sol3_rvec_y,sol3_rvec_z,sol3_R00,sol3_R01,sol3_R02,sol3_tx,sol3_R10,sol3_R11,sol3_R12,sol3_ty,sol3_R20,sol3_R21,sol3_R22,sol3_tz,E_rvec_x,E_rvec_y,E_rvec_z,E_R00,E_R01,E_R02,E_tx,E_R10,E_R11,E_R12,E_ty,E_R20,E_R21,E_R22,E_tz" << endl;
-
-
 
 	clock_t tStart = clock();
 	for(size_t ni = 0; ni < keyIMG.size(); ni++)
@@ -207,7 +206,7 @@ int main( int argc, char** argv )
 		mySLAM.run(img, frame_name, gpsT[keyIMG[ni]], 
 					geo.lat[keyIMG[ni]], geo.lng[keyIMG[ni]], geo.alt[keyIMG[ni]], 
 					ang.roll[keyIMG[ni]], ang.pitch[keyIMG[ni]], ang.heading[keyIMG[ni]], 
-					f_vo, f_gt, f_rvec_abs, vo_loc);
+					f_vo, f_gt, f_util, vo_loc);
 		
 	}
 	clock_t tEnd = clock();
