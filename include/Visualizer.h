@@ -28,8 +28,8 @@ namespace ORB_VISLAM
 	{
 		public:
 			Visualizer(cv::Mat &im, cv::Mat &T_GT, 	 cv::Mat &T_cam_E,
-									cv::Mat T_cam_0, cv::Mat T_cam_1, 
-									cv::Mat T_cam_2, cv::Mat T_cam_3, 
+									cv::Mat &T_cam_0, cv::Mat &T_cam_1, 
+									cv::Mat &T_cam_2, cv::Mat &T_cam_3, 
 									int fps, float scale, bool &frame_avl,
 									pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 			struct Triplet;

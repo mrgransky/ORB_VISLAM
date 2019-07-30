@@ -10,9 +10,9 @@ using namespace pcl::visualization;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
-								Mat T_cam_0, Mat T_cam_1, 
-								Mat T_cam_2, Mat T_cam_3,
+Visualizer::Visualizer(Mat &im, Mat &T_GT, 		Mat &T_cam_E,
+								Mat &T_cam_0, 	Mat &T_cam_1,
+								Mat &T_cam_2, 	Mat &T_cam_3,
 								int fps, float scale, bool &frame_avl,
 								PointCloud<PointXYZ>::Ptr &cloud)
 {
@@ -22,6 +22,7 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 	cout << "#########################################################################" << endl;
 
 	vTgt 		= T_GT;
+	
 		
 	vTcam_E 	= T_cam_E;
 	vTcam_0 	= T_cam_0;

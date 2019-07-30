@@ -46,27 +46,23 @@ namespace ORB_VISLAM
 			cv::Point2f pp;
     		std::vector<cv::Mat> T_f, R_f, t_f, T_local;
     		
-    		cv::Mat R_f_E, R_f_0, R_f_1, R_f_2, R_f_3;
-    		cv::Mat t_f_E, t_f_0, t_f_1, t_f_2, t_f_3;
+    		cv::Mat R_Glob, R_f_E, R_f_0, R_f_1, R_f_2, R_f_3;
+    		cv::Mat t_Glob, t_f_E, t_f_0, t_f_1, t_f_2, t_f_3;
     		
-    		cv::Mat rvec_E, rvec_0, rvec_1, rvec_2, rvec_3,
-					rvec_loc_E, rvec_loc_0, rvec_loc_1, rvec_loc_2, rvec_loc_3;
+    		cv::Mat rvec_Glob, rvec_E, rvec_0, rvec_1, rvec_2, rvec_3,
+					rvec_loc, rvec_loc_E, rvec_loc_0, rvec_loc_1, rvec_loc_2, rvec_loc_3;
     		
 			int nmatchesCCM = 0, nmatches12 = 0, nmatches21 = 0;
 			
-			cv::Mat T_prev_E	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_prev_0	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_prev_1	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_prev_2	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_prev_3	= cv::Mat::eye(4, 4, CV_32F);
-
-			cv::Mat T_cam_E		= cv::Mat::eye(4, 4, CV_32F);			
+			cv::Mat T_cam_E		= cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat T_Global	= cv::Mat::eye(4, 4, CV_32F);	
 			cv::Mat T_cam_0		= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_cam_1 	= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_cam_2 	= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_cam_3 	= cv::Mat::eye(4, 4, CV_32F);
 			
-			cv::Mat T_loc_E		= cv::Mat::eye(4, 4, CV_32F);						
+			cv::Mat T_loc_E		= cv::Mat::eye(4, 4, CV_32F);
+			cv::Mat T_loc		= cv::Mat::eye(4, 4, CV_32F);					
 			cv::Mat T_loc_0		= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_loc_1 	= cv::Mat::eye(4, 4, CV_32F);
 			cv::Mat T_loc_2 	= cv::Mat::eye(4, 4, CV_32F);
@@ -89,26 +85,14 @@ namespace ORB_VISLAM
     		cv::Mat ref_desc;
     		
 			cv::Mat Z_3x1, I_3x3, I_4x4;
-			cv::Mat R_f_prev_E, R_f_prev_0, R_f_prev_1, R_f_prev_2, R_f_prev_3;
-    		cv::Mat rvec_prev_E, rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;
-    		cv::Mat t_f_prev_E, t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
+			cv::Mat R_Glob_prv, R_f_prev_E, R_f_prev_0, R_f_prev_1, R_f_prev_2, R_f_prev_3;
+    		cv::Mat rvec_Glob_prv, rvec_prev_E, rvec_prev_0, rvec_prev_1, rvec_prev_2, rvec_prev_3;
+    		cv::Mat t_Glob_prv, t_f_prev_E, t_f_prev_0, t_f_prev_1, t_f_prev_2, t_f_prev_3;
     		
 			
 			cv::Mat Rt_prev = cv::Mat::eye(3, 4, CV_32F);
 			cv::Mat Rt 		= cv::Mat::eye(3, 4, CV_32F);
 
-			cv::Mat Rt_0_prev 	= cv::Mat::eye(3, 4, CV_32F);
-			cv::Mat Rt_0		= cv::Mat::eye(3, 4, CV_32F);
-
-			cv::Mat Rt_1_prev 	= cv::Mat::eye(3, 4, CV_32F);
-			cv::Mat Rt_1 		= cv::Mat::eye(3, 4, CV_32F);
-
-			cv::Mat Rt_2_prev 	= cv::Mat::eye(3, 4, CV_32F);
-			cv::Mat Rt_2 		= cv::Mat::eye(3, 4, CV_32F);
-
-			cv::Mat Rt_3_prev 	= cv::Mat::eye(3, 4, CV_32F);
-			cv::Mat Rt_3 		= cv::Mat::eye(3, 4, CV_32F);
-			
 			int vWS;
 			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
@@ -161,7 +145,6 @@ namespace ORB_VISLAM
 								cv::Mat &R1, cv::Mat &R2, cv::Mat &t, 
 								cv::Mat &R_correct, cv::Mat &t_correct);
 								
-			void calcGlobalPose(cv::Mat &R_local, cv::Mat &t_local);
 			void getDummy(std::vector<cv::Point2f> &src, 
 							std::vector<cv::Point2f> &dst, 
 							std::vector<int> &ref_kp_idx, 

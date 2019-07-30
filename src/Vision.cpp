@@ -97,6 +97,7 @@ Vision::Vision(const string &settingFilePath,
 	
 	cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 		
+	R_Glob = Mat::eye(3, 3, CV_32F);
 	R_f_E = Mat::eye(3, 3, CV_32F);
 	R_f_0 = Mat::eye(3, 3, CV_32F);
 	R_f_1 = Mat::eye(3, 3, CV_32F);
@@ -109,12 +110,14 @@ Vision::Vision(const string &settingFilePath,
 	rvec_2 = Mat::zeros(3, 1, CV_32F);
 	rvec_3 = Mat::zeros(3, 1, CV_32F);
 	
-	rvec_loc_E = Mat::zeros(3, 1, CV_32F);
-	rvec_loc_0 = Mat::zeros(3, 1, CV_32F);
-	rvec_loc_1 = Mat::zeros(3, 1, CV_32F);
-	rvec_loc_2 = Mat::zeros(3, 1, CV_32F);
-	rvec_loc_3 = Mat::zeros(3, 1, CV_32F);
+	rvec_Glob_prv 	= Mat::zeros(3, 1, CV_32F);
+	rvec_loc_E 		= Mat::zeros(3, 1, CV_32F);
+	rvec_loc_0 		= Mat::zeros(3, 1, CV_32F);
+	rvec_loc_1 		= Mat::zeros(3, 1, CV_32F);
+	rvec_loc_2 		= Mat::zeros(3, 1, CV_32F);
+	rvec_loc_3 		= Mat::zeros(3, 1, CV_32F);
 	
+	t_Glob = Mat::eye(3, 1, CV_32F);
 	t_f_E = Mat::zeros(3, 1, CV_32F);
 	t_f_0 = Mat::zeros(3, 1, CV_32F);
 	t_f_1 = Mat::zeros(3, 1, CV_32F);
@@ -122,18 +125,21 @@ Vision::Vision(const string &settingFilePath,
 	t_f_3 = Mat::zeros(3, 1, CV_32F);
 	
 	R_f_prev_E = Mat::eye(3, 3, CV_32F);
+	R_Glob_prv = Mat::eye(3, 3, CV_32F);
 	R_f_prev_0 = Mat::eye(3, 3, CV_32F);
 	R_f_prev_1 = Mat::eye(3, 3, CV_32F);
 	R_f_prev_2 = Mat::eye(3, 3, CV_32F);
 	R_f_prev_3 = Mat::eye(3, 3, CV_32F);
 	
 	rvec_prev_E = Mat::zeros(3, 1, CV_32F);
+	rvec_Glob_prv = Mat::eye(3, 3, CV_32F);
 	rvec_prev_0 = Mat::zeros(3, 1, CV_32F);
 	rvec_prev_1 = Mat::zeros(3, 1, CV_32F);
 	rvec_prev_2 = Mat::zeros(3, 1, CV_32F);
 	rvec_prev_3 = Mat::zeros(3, 1, CV_32F);
 	
 	t_f_prev_E = Mat::zeros(3, 1, CV_32F);
+	t_Glob_prv = Mat::eye(3, 1, CV_32F);
 	t_f_prev_0 = Mat::zeros(3, 1, CV_32F);
 	t_f_prev_1 = Mat::zeros(3, 1, CV_32F);
 	t_f_prev_2 = Mat::zeros(3, 1, CV_32F);
@@ -421,6 +427,7 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 {		
 	Mat R1, R2, t1, t2, R_local, t_local;
 
+	vector<Mat> p3D_loc;
 	vector<float> good_vec(4);
 	vector<Mat> Rt_vec(4);
 	
@@ -444,7 +451,7 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 			<< '\t' << setprecision(3) << good_vec[2] 
 			<< '\t' << setprecision(3) << good_vec[3] 
 			<< '\n';
-	
+
 	// 2. Obtain correct Pose: // cheirality constraint:
 	ChooseCorrectPose(good_vec, Rt_vec, R_local, t_local);
 	
@@ -453,30 +460,30 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 		t_local.at<float>(2) *= -1.0f;
 	}
 	setCurrentPose(R_local, t_local, T_loc_0);
-	//cout << "\nT_loc = \n" << T_loc_0 << endl;
+	SetR_t(R_local, t_local, Rt);
+	Rodrigues(R_local, rvec_loc_0);
 	
-	if (sc < vMIN_SCALE ||	t_local.at<float>(2) < t_local.at<float>(0) ||
-							t_local.at<float>(2) < t_local.at<float>(1))
+	if (sc > vMIN_SCALE &&	fabs(t_local.at<float>(2,0)) > t_local.at<float>(0,0) &&
+							fabs(t_local.at<float>(2,0)) > t_local.at<float>(1,0))
 	{
-		cerr 	<< "\n\n\n#########################ERROR:#########################\n" 
-				<< "\n\nconstraints NOT fullfiled!!!\n"
-				<< endl;
-		
-		cout << "scale = " 		<< sc			<< endl;
-		cout << "t_local = \t" 	<< t_local.t()	<< endl;
+		Reconstruction(src, dst, Rt_prev, Rt, p3D_loc);
+		Mat visLOCAL(3, p3D_loc.size(), CV_32F);
+		for (size_t i = 0; i < p3D_loc.size(); i++)
+		{
+			p3D_loc[i].copyTo(visLOCAL.col(i));
+		}
+		t_f_E = sc*(R_f_E * t_local) + t_f_prev_E;
+		R_f_E = R_f_prev_E * R_local;
+		visLOCAL.copyTo(visionMap);
 	}
-	if (sc > vMIN_SCALE &&	t_local.at<float>(2,0) > t_local.at<float>(0,0) &&
-							t_local.at<float>(2,0) > t_local.at<float>(1,0))
-	{
-		t_f_0 = t_f_prev_0 + sc*(R_f_0 * t_local);
-		R_f_0 = R_f_prev_0 * R_local;
-	}
-	Rodrigues(R_f_0, rvec_0);
-	setCurrentPose(R_f_0, t_f_0, T_cam_0);
-	//cout << "\nT_0 = \n" << T_cam_0 << endl;
-	R_f_prev_0 		= R_f_0.clone();
-	rvec_prev_0 	= rvec_0.clone();	
-	t_f_prev_0 		= t_f_0.clone();
+	Rodrigues(R_f_E, rvec_E);
+	setCurrentPose(R_f_E, t_f_E, T_cam_E);
+	//cout << "\nT_E = \n" << T_cam_E << endl;
+	
+	R_f_prev_E 		= R_f_E.clone();
+	rvec_prev_E 	= rvec_E.clone();	
+	t_f_prev_E 		= t_f_E.clone();
+	Rt_prev			= Rt.clone(); // TODO: this must be commented in theory eye(3,4)
 }
 
 void Vision::ChooseCorrectPose(vector<float> &good_vec, vector<Mat> &Rt_vec, Mat &R_, Mat &t_)
@@ -529,174 +536,6 @@ void Vision::ChooseCorrectPose(vector<float> &good_vec, vector<Mat> &Rt_vec, Mat
 		cout << "No SOLUTION FOUND!!!" << endl;
 		exit(EXIT_FAILURE);
 	}
-}
-
-
-void Vision::get_correct_pose(vector<Point2f> &src, vector<Point2f> &dst, 
-								Mat &R1, Mat &R2, Mat &t, Mat &R_correct, Mat &t_correct)
-{
-
-	R_correct.create(3, 3, CV_32F);
-	t_correct.create(3, 1, CV_32F);
-	// Normalize Points:
-	vector<Point2f> src_norm, dst_norm;
-	Normalize2DPts(src, dst, src_norm, dst_norm);
-	
-	/*vector<Point2f> src_norm2, dst_norm2;
-	for(size_t i = 0; i < src.size(); i++)
-	{
-		float x = (src[i].x - pp.x)/foc;
-		float y = (src[i].y - pp.y)/foc;
-		
-		src_norm2.push_back(Point2f(x,y));
-		
-		float xx = (dst[i].x - pp.x)/foc;
-		float yy = (dst[i].y - pp.y)/foc;
-		
-		dst_norm2.push_back(Point2f(xx,yy));
-	}
-	
-	for(size_t i = 0; i < src_norm.size(); i++)
-	{
-		cout << "\n\nsrc_norm1 [" <<i << "] = "<< src_norm[i]<< endl;
-		cout << "src_norm2 [" <<i << "] = "<< src_norm2[i]<< endl;
-	
-		cout << "\n\ndst_norm1 [" <<i << "] = "<< dst_norm[i]<< endl;
-		cout << "dst_norm2 [" <<i << "] = "<< dst_norm2[i]<< endl;
-		cout << "----------------------------------------" << endl;
-	
-	}*/
-	
-	// P0, P1, P2, P3, P4:
-	Mat P0 = Mat::eye(3, 4, R1.type());
-    Mat P1(3, 4, R1.type()), P2(3, 4, R1.type()), P3(3, 4, R1.type()), P4(3, 4, R1.type());
-    P1(Range::all(), Range(0, 3)) = R1 * 1.0; P1.col(3) = t * 1.0;
-    P2(Range::all(), Range(0, 3)) = R2 * 1.0; P2.col(3) = t * 1.0;
-    P3(Range::all(), Range(0, 3)) = R1 * 1.0; P3.col(3) = -t * 1.0;
-    P4(Range::all(), Range(0, 3)) = R2 * 1.0; P4.col(3) = -t * 1.0;
-
-	Mat Q;
-	
-	// triangulation sol_1:
-	triangulatePoints(P0, P1, src_norm, dst_norm, Q);
-	Mat mask1 = Q.row(2).mul(Q.row(3)) > 0;
-	Q.row(0) /= Q.row(3);
-	Q.row(1) /= Q.row(3);
-	Q.row(2) /= Q.row(3);
-	Q.row(3) /= Q.row(3);
-	mask1 = (Q.row(2) < 50) & mask1;
-	Q = P1 * Q;
-	mask1 = (Q.row(2) > 0) & mask1;
-	mask1 = (Q.row(2) < 50) & mask1;
-
-	// triangulation sol_2:
-	triangulatePoints(P0, P2, src_norm, dst_norm, Q);
-	Mat mask2 = Q.row(2).mul(Q.row(3)) > 0;
-	Q.row(0) /= Q.row(3);
-	Q.row(1) /= Q.row(3);
-	Q.row(2) /= Q.row(3);
-	Q.row(3) /= Q.row(3);
-	mask2 = (Q.row(2) < 50) & mask2;
-	Q = P2 * Q;
-	mask2 = (Q.row(2) > 0) & mask2;
-	mask2 = (Q.row(2) < 50) & mask2;
-
-	// triangulation sol_3:
-	triangulatePoints(P0, P3, src_norm, dst_norm, Q);
-	Mat mask3 = Q.row(2).mul(Q.row(3)) > 0;
-	Q.row(0) /= Q.row(3);
-	Q.row(1) /= Q.row(3);
-	Q.row(2) /= Q.row(3);
-	Q.row(3) /= Q.row(3);
-	mask3 = (Q.row(2) < 50) & mask3;
-	Q = P3 * Q;
-	mask3 = (Q.row(2) > 0) & mask3;
-	mask3 = (Q.row(2) < 50) & mask3;
-
-	// triangulation sol_4:
-	triangulatePoints(P0, P4, src_norm, dst_norm, Q);
-	Mat mask4 = Q.row(2).mul(Q.row(3)) > 0;
-	Q.row(0) /= Q.row(3);
-	Q.row(1) /= Q.row(3);
-	Q.row(2) /= Q.row(3);
-	Q.row(3) /= Q.row(3);
-	mask4 = (Q.row(2) < 50) & mask4;
-	Q = P4 * Q;
-	mask4 = (Q.row(2) > 0) & mask4;
-	mask4 = (Q.row(2) < 50) & mask4;
-
-
-	mask1 = mask1.t();
-	mask2 = mask2.t();
-	mask3 = mask3.t();
-	mask4 = mask4.t();
-
-	int good1 = countNonZero(mask1);
-	int good2 = countNonZero(mask2);
-	int good3 = countNonZero(mask3);
-	int good4 = countNonZero(mask4);
-
-	cout << "\nGOOD:\n"; 
-	cout << "\tSOL_0\tSOL_1\tSOL_2\tSOL_3\n";
-	cout 	<< '\t' << good1 
-			<< '\t' << good2 
-			<< '\t' << good3 
-			<< '\t' << good4 
-			<< '\n';
-
-	if (good1 >= good2 && good1 >= good3 && good1 >= good4)
-	{
-		cout << "sol_0 correct!" << endl;
-		R1.copyTo(R_correct);
-		t.copyTo(t_correct);
-	}
-	else if (good2 >= good1 && good2 >= good3 && good2 >= good4)
-	{
-		cout << "sol_1 correct!" << endl;
-		R2.copyTo(R_correct);
-		t.copyTo(t_correct);
-	}
-	else if (good3 >= good1 && good3 >= good2 && good3 >= good4)
-	{
-		cout << "sol_2 correct!" << endl;
-		t = -t;
-		R1.copyTo(R_correct);
-		t.copyTo(t_correct);
-	}
-	else
-	{
-		cout << "sol_3 correct!" << endl;
-		t = -t;
-		R2.copyTo(R_correct);
-		t.copyTo(t_correct);
-	}
-}
-
-void Vision::calcGlobalPose(Mat &R_local, Mat &t_local)
-{
-	// TODO: T_CAM must be the output??????????????!!
-	// FIX it later---
-	if (sc > vMIN_SCALE &&	t_local.at<float>(2,0) > t_local.at<float>(0,0) &&
-							t_local.at<float>(2,0) > t_local.at<float>(1,0))
-	{
-		/*Reconstruction(src, dst, Rt_prev, Rt, p3D_loc);
-		Mat visLOCAL(3, p3D_loc.size(), CV_32F);
-		for (size_t i = 0; i < p3D_loc.size(); i++)
-		{
-			p3D_loc[i].copyTo(visLOCAL.col(i));
-		}*/
-		t_f_E = t_f_prev_E + sc*(R_f_E * t_local);
-		R_f_E = R_f_prev_E * R_local;
-		//R_f_E = R_local * R_f_prev_E;
-		//visLOCAL.copyTo(visionMap);
-	}
-	Rodrigues(R_f_E, rvec_E);
-	setCurrentPose(R_f_E, t_f_E, T_cam_E);
-	R_f_prev_E 		= R_f_E.clone();
-	rvec_prev_E 	= rvec_E.clone();	
-	t_f_prev_E 		= t_f_E.clone();
-	Rt_prev			= Rt.clone();
-	
 }
 
 void Vision::homography_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst, 
@@ -799,16 +638,7 @@ void Vision::PoseFromEssentialMatrix(vector<Point2f> &src, vector<Point2f> &dst,
 	
 	SetR_t(R_local, t_local, Rt);
 	//cout << "\nT_loc_E = \n" << T_loc_E << endl;
-	if (sc < vMIN_SCALE ||	fabs(t_local.at<float>(2,0)) < t_local.at<float>(0,0) ||
-							fabs(t_local.at<float>(2,0)) < t_local.at<float>(1,0))
-	{
-		cerr 	<< "\n\n*******************************ERROR:********************************\n" 
-				<< "constraints NOT fullfiled!!!\n"
-				<< endl;
-		cout << "scale = " <<sc<< endl;
-		cout << "t_local = \t" << t_local.t()<< endl;
-		//exit(EXIT_FAILURE);
-	}
+
 	if (sc > vMIN_SCALE &&	fabs(t_local.at<float>(2,0)) > t_local.at<float>(0,0) &&
 							fabs(t_local.at<float>(2,0)) > t_local.at<float>(1,0))
 	{
@@ -1330,6 +1160,8 @@ void Vision::get_info(Mat &matrix, string matrix_name)
 	cout << matrix_name 	<<"\ntype = "		<< matrix.type() 
 							<< "\tdepth = "		<< matrix.depth() 
 							<< "\tch = " 		<< matrix.channels()
+							<< "\tr = "			<< matrix.rows
+							<< "\tc = "			<< matrix.cols
 							<< endl;	
 }
 
