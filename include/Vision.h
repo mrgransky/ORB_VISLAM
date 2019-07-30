@@ -55,18 +55,7 @@ namespace ORB_VISLAM
 			int nmatchesCCM = 0, nmatches12 = 0, nmatches21 = 0;
 			
 			cv::Mat T_cam_E		= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_Global	= cv::Mat::eye(4, 4, CV_32F);	
-			cv::Mat T_cam_0		= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_cam_1 	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_cam_2 	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_cam_3 	= cv::Mat::eye(4, 4, CV_32F);
-			
 			cv::Mat T_loc_E		= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_loc		= cv::Mat::eye(4, 4, CV_32F);					
-			cv::Mat T_loc_0		= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_loc_1 	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_loc_2 	= cv::Mat::eye(4, 4, CV_32F);
-			cv::Mat T_loc_3 	= cv::Mat::eye(4, 4, CV_32F);
 			
 			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 			std::vector<cv::Mat> map_3D;
@@ -96,9 +85,7 @@ namespace ORB_VISLAM
 			int vWS;
 			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
-			void getEssentialMatrix(std::vector<cv::Mat> &n_src, 
-									std::vector<cv::Mat> &n_dst, 
-									cv::Mat &E);
+			
 			void setCurrentPose(cv::Mat &R_, cv::Mat &t_, cv::Mat &T_);
 			
     		void matching(cv::Mat &img, std::vector<cv::KeyPoint> &kp,
@@ -109,16 +96,23 @@ namespace ORB_VISLAM
 			
 			void Reconstruction(std::vector<cv::Point2f> &src, 
 								std::vector<cv::Point2f> &dst, 
-								cv::Mat &Rt_prev, cv::Mat &Rt,
+								cv::Mat &Rt,
 								std::vector<cv::Mat> &pt3D_loc);
 
-			void Extract3DPts(std::vector<cv::Mat> &src, std::vector<cv::Mat> &dst, 
+			void Extract4DPts(std::vector<cv::Mat> &src, std::vector<cv::Mat> &dst, 
 								cv::Mat &Rt, cv::Mat &Points4D);
 			
 			void SetR_t(cv::Mat &R_, cv::Mat &t_, cv::Mat &Rt_);
 			void ChooseCorrectPose(std::vector<float> &good_vec, 
 						std::vector<cv::Mat> &Rt_vec, 
 						cv::Mat &R_, cv::Mat &t_);
+			
+			void ChooseCorrectPose(std::vector<float> &good_vec, 
+						std::vector<cv::Mat> &Rt_vec, 
+						std::vector<cv::Mat> &Pts3D_vec, 
+						cv::Mat &R_, cv::Mat &t_, cv::Mat &p3_);
+			
+			
 			void Normalize2DPts(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst,
 								std::vector<cv::Mat> &src_normalized, 
 								std::vector<cv::Mat> &dst_normalized);
@@ -156,8 +150,6 @@ namespace ORB_VISLAM
 											std::vector <std::pair<int,int>> &m_12,
 											std::vector <std::pair<int,int>> &m_21);
 											
-			cv::Mat getHomography(	const std::vector<cv::Point2f> &p_ref, 
-									const std::vector<cv::Point2f> &p_mtch);
 									
 			void essential_matrix_inliers(std::vector<cv::Point2f> &src, 
 											std::vector<cv::Point2f> &dst, 
@@ -166,17 +158,6 @@ namespace ORB_VISLAM
 											std::vector<std::vector<cv::DMatch>> &all_matches,
 											std::vector<std::pair<int,int>> &match_idx);
 			
-			void homography_matrix_inliers(std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst, 
-											std::vector<int> &ref_kp_idx, 
-											std::vector<int> &kp_idx, 
-											std::vector<std::vector<cv::DMatch>> &all_matches,
-											std::vector<std::pair<int,int>> &match_idx);
-			
-			
-			void PoseFromHomographyMatrix(	std::vector<cv::Point2f> &src, 
-											std::vector<cv::Point2f> &dst,
-											cv::Mat &H);
 			
 			void PoseFromEssentialMatrix(	std::vector<cv::Point2f> &src, 
 											std::vector<cv::Point2f> &dst,
@@ -188,9 +169,8 @@ namespace ORB_VISLAM
 			
 			void triangulateMyPoints(std::vector<cv::Point2f> &src, 
 									std::vector<cv::Point2f> &dst, 
-									cv::Mat &Rt, float &acceptedPts);
-			
-			
+									cv::Mat &Rt, float &acceptedPts, cv::Mat & Pts3D);
+	
 			void GetPose(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst, 
 								cv::Mat &E);
 

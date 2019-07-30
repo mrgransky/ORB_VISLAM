@@ -28,8 +28,6 @@ namespace ORB_VISLAM
 	{
 		public:
 			Visualizer(cv::Mat &im, cv::Mat &T_GT, 	 cv::Mat &T_cam_E,
-									cv::Mat &T_cam_0, cv::Mat &T_cam_1, 
-									cv::Mat &T_cam_2, cv::Mat &T_cam_3, 
 									int fps, float scale, bool &frame_avl,
 									pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 			struct Triplet;
@@ -51,7 +49,7 @@ namespace ORB_VISLAM
 			bool hasFrame;
 			pangolin::OpenGlMatrix getCurrentPose(cv::Mat &T);
 		private:
-			cv::Mat vTgt, vTcam_E, vTcam_0, vTcam_1, vTcam_2, vTcam_3;
+			cv::Mat vTgt, vTcam_E;
 			cv::Mat vglob;
 			pcl::PointCloud<pcl::PointXYZ>::Ptr vCloud;
 			void getGlobalPTs3D(cv::Mat &loc, cv::Mat &glob);

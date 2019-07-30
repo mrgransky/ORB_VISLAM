@@ -29,10 +29,6 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, 	absPosePtr->T_abs,
 														visionPtr->T_cam_E,
-														visionPtr->T_cam_0, 
-														visionPtr->T_cam_1, 
-														visionPtr->T_cam_2, 
-														visionPtr->T_Global, 
 														visionPtr->fps, 
 														frameDownScale, frame_avl,
 														visionPtr->cloud);
@@ -63,10 +59,6 @@ System::System(	const string &settingFilePath, float frameDownScale,
 	// initialize visualizer class
 	visualizerPtr 	= new Visualizer(visionPtr->IMG_, 	absPosePtr->T_abs, 
 														visionPtr->T_cam_E,
-														visionPtr->T_cam_0, 
-														visionPtr->T_cam_1, 
-														visionPtr->T_cam_2, 
-														visionPtr->T_Global,
 														visionPtr->fps, 
 														frameDownScale, frame_avl,
 														visionPtr->cloud);
@@ -101,18 +93,11 @@ void System::run(Mat &raw_frame, string &frame_name,
 				visionPtr->front3DPtsOWN, 
 				file_util);
 				
-	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
-				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
-				visionPtr->T_loc_2, visionPtr->rvec_loc_2,
-				visionPtr->T_loc_3, visionPtr->rvec_loc_3,
-				visionPtr->T_loc_E, visionPtr->rvec_loc_E,
+	saveVOFile(visionPtr->T_loc_E, visionPtr->rvec_loc_E,
 				file_vo_loc);
 	
-	saveVOFile(	visionPtr->T_cam_0, visionPtr->rvec_0, 
-				visionPtr->T_cam_1, visionPtr->rvec_1,
-				visionPtr->T_cam_2, visionPtr->rvec_2,
-				visionPtr->T_cam_3, visionPtr->rvec_3,
-				visionPtr->T_cam_E, visionPtr->rvec_E,
+	saveVOFile(visionPtr->T_cam_E, 
+				visionPtr->rvec_E,
 				file_vo);
 }
 
@@ -141,18 +126,12 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 				visionPtr->front3DPtsOWN, 
 				file_util);
 	
-	saveVOFile(	visionPtr->T_loc_0, visionPtr->rvec_loc_0, 
-				visionPtr->T_loc_1, visionPtr->rvec_loc_1,
-				visionPtr->T_loc_2, visionPtr->rvec_loc_2,
-				visionPtr->T_loc_3, visionPtr->rvec_loc_3,
-				visionPtr->T_loc_E, visionPtr->rvec_loc_E,
+				
+	saveVOFile(visionPtr->T_loc_E, visionPtr->rvec_loc_E,
 				file_vo_loc);
 	
-	saveVOFile(	visionPtr->T_cam_0, visionPtr->rvec_0, 
-				visionPtr->T_cam_1, visionPtr->rvec_1,
-				visionPtr->T_cam_2, visionPtr->rvec_2,
-				visionPtr->T_cam_3, visionPtr->rvec_3,
-				visionPtr->T_cam_E, visionPtr->rvec_E,
+	saveVOFile(visionPtr->T_cam_E, 
+				visionPtr->rvec_E,
 				file_vo);
 }
 
@@ -237,91 +216,10 @@ void System::saveMatrix(Mat &Matrix, float &scale, float &frontOPCV,
 	}
 }
 
-void System::saveVOFile(Mat &Tc_0, Mat &rvec_0, 
-						Mat &Tc_1, Mat &rvec_1, 
-						Mat &Tc_2, Mat &rvec_2, 
-						Mat &Tc_3, Mat &rvec_3,
-						Mat &Tc_E, Mat &rvec_E,						
+void System::saveVOFile(Mat &Tc_E, Mat &rvec_E,						
 						ofstream &file_)
 {	
-	file_	<< setprecision(8)	<< rvec_0.at<float>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_0.at<float>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_0.at<float>(2,0) 	<< ","
-			
-			<< setprecision(8)	<< Tc_0.at<float>(0,0) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(0,1) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(0,2)		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(0,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_0.at<float>(1,0) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(1,1) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(1,2) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(1,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_0.at<float>(2,0) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(2,1) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(2,2) 		<< ","
-			<< setprecision(8)	<< Tc_0.at<float>(2,3) 		<< ","
-					
-			<< setprecision(8)	<< rvec_1.at<float>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_1.at<float>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_1.at<float>(2,0) 	<< ","
-
-			<< setprecision(8)	<< Tc_1.at<float>(0,0) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(0,1) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(0,2)		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(0,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_1.at<float>(1,0) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(1,1) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(1,2) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(1,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_1.at<float>(2,0) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(2,1) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(2,2) 		<< ","
-			<< setprecision(8)	<< Tc_1.at<float>(2,3) 		<< ","
-			
-			<< setprecision(8)	<< rvec_2.at<float>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_2.at<float>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_2.at<float>(2,0) 	<< ","
-
-			<< setprecision(8)	<< Tc_2.at<float>(0,0) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(0,1) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(0,2)		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(0,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_2.at<float>(1,0) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(1,1) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(1,2) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(1,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_2.at<float>(2,0) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(2,1) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(2,2) 		<< ","
-			<< setprecision(8)	<< Tc_2.at<float>(2,3) 		<< ","
-			
-			<< setprecision(8)	<< rvec_3.at<float>(0,0) 	<< ","
-			<< setprecision(8)	<< rvec_3.at<float>(1,0) 	<< ","
-			<< setprecision(8)	<< rvec_3.at<float>(2,0) 	<< ","
-
-			<< setprecision(8)	<< Tc_3.at<float>(0,0) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(0,1) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(0,2)		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(0,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_3.at<float>(1,0) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(1,1) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(1,2) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(1,3) 		<< ","
-			
-			<< setprecision(8)	<< Tc_3.at<float>(2,0) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(2,1) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(2,2) 		<< ","
-			<< setprecision(8)	<< Tc_3.at<float>(2,3) 		<< ","
-			
-			
-			<< setprecision(8)	<< rvec_E.at<float>(0,0) 	<< ","
+	file_	<< setprecision(8)	<< rvec_E.at<float>(0,0) 	<< ","
 			<< setprecision(8)	<< rvec_E.at<float>(1,0) 	<< ","
 			<< setprecision(8)	<< rvec_E.at<float>(2,0) 	<< ","
 

@@ -70,12 +70,7 @@ namespace ORB_VISLAM
 			void saveMatrix(cv::Mat &Matrix, float &scale, float &frontOPCV, 
 							float &frontOWN, std::ofstream &file_);
 			
-			void saveVOFile(cv::Mat &Tc_0, cv::Mat &rvec_0, 
-							cv::Mat &Tc_1, cv::Mat &rvec_1,
-							cv::Mat &Tc_2, cv::Mat &rvec_2,
-							cv::Mat &Tc_3, cv::Mat &rvec_3,
-							cv::Mat &Tc_E, cv::Mat &rvec_E,
-							std::ofstream &file_);
+			void saveVOFile(cv::Mat &Tc_E, cv::Mat &rvec_E, std::ofstream &file_);
 			
 			Visualizer* visualizerPtr;
 			Vision*		visionPtr;

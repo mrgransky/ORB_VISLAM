@@ -10,9 +10,7 @@ using namespace pcl::visualization;
 namespace ORB_VISLAM
 {
 
-Visualizer::Visualizer(Mat &im, Mat &T_GT, 		Mat &T_cam_E,
-								Mat &T_cam_0, 	Mat &T_cam_1,
-								Mat &T_cam_2, 	Mat &T_cam_3,
+Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 								int fps, float scale, bool &frame_avl,
 								PointCloud<PointXYZ>::Ptr &cloud)
 {
@@ -22,13 +20,7 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, 		Mat &T_cam_E,
 	cout << "#########################################################################" << endl;
 
 	vTgt 		= T_GT;
-	
-		
 	vTcam_E 	= T_cam_E;
-	vTcam_0 	= T_cam_0;
-	vTcam_1 	= T_cam_1;
-	vTcam_2 	= T_cam_2;
-	vTcam_3 	= T_cam_3;
 	vCloud		= cloud;
 	
 	vFPS 	= fps;
@@ -222,7 +214,6 @@ void Visualizer::openGL_()
 	vector<pangolin::OpenGlMatrix> KeyFrames;
 	
 	vector<Triplet>	vertices_cam_Ess;
-	vector<Triplet> vertices_cam_0, vertices_cam_1, vertices_cam_2, vertices_cam_3;
 	int counter_KF = 0;
 	while(!pangolin::ShouldQuit())
 	{ // Clear screen and activate view to render into
@@ -253,54 +244,7 @@ void Visualizer::openGL_()
 		
 		counter_KF++;
 		// ############ Draw GROUND TRUTH ############
-		
-		
-		// ############ Homography Matrix solution ############
-		Triplet current_cam_pt_0, current_cam_pt_1, current_cam_pt_2, current_cam_pt_3;
-		
-		pangolin::OpenGlMatrix pTc_0;
-		pTc_0.SetIdentity();
-		pTc_0 	= getCurrentPose(vTcam_0);
-		draw(pTc_0,.1,.82,.81); // cyan
-		//s_cam.Follow(pTc_0);
-		current_cam_pt_0.x = vTcam_0.at<float>(0,3);
-		current_cam_pt_0.y = vTcam_0.at<float>(1,3);
-		current_cam_pt_0.z = vTcam_0.at<float>(2,3);
-		vertices_cam_0.push_back(current_cam_pt_0);
-		draw_path(vertices_cam_0, .7,.71,.1);
-		
-		pangolin::OpenGlMatrix pTc_1;
-		pTc_1.SetIdentity();
-		pTc_1 	= getCurrentPose(vTcam_1);
-		draw(pTc_1, 1,.1,.1); // red
-		current_cam_pt_1.x = vTcam_1.at<float>(0,3);
-		current_cam_pt_1.y = vTcam_1.at<float>(1,3);
-		current_cam_pt_1.z = vTcam_1.at<float>(2,3);
-		vertices_cam_1.push_back(current_cam_pt_1);
-		draw_path(vertices_cam_1, .6, .2, .81);
-	
-		pangolin::OpenGlMatrix pTc_2;
-		pTc_2.SetIdentity();
-		pTc_2 	= getCurrentPose(vTcam_2);
-		draw(pTc_2, .01, .01, .01); // black
-		current_cam_pt_2.x = vTcam_2.at<float>(0,3);
-		current_cam_pt_2.y = vTcam_2.at<float>(1,3);
-		current_cam_pt_2.z = vTcam_2.at<float>(2,3);
-		vertices_cam_2.push_back(current_cam_pt_2);
-		draw_path(vertices_cam_2, .95,.93, .01);
-		
-		
-		pangolin::OpenGlMatrix pTc_3;
-		pTc_3.SetIdentity();
-		pTc_3 	= getCurrentPose(vTcam_3);
-		draw(pTc_3, .01,.01,.92); // blue
-		current_cam_pt_3.x = vTcam_3.at<float>(0,3);
-		current_cam_pt_3.y = vTcam_3.at<float>(1,3);
-		current_cam_pt_3.z = vTcam_3.at<float>(2,3);
-		vertices_cam_3.push_back(current_cam_pt_3);
-		draw_path(vertices_cam_3, .09,.91, .61);
-		// ############ Homography Matrix solution ############
-		
+				
 		// ############ Essential Matrix solution ############
 		Triplet current_cam_pt_E;
 		
@@ -331,7 +275,6 @@ void Visualizer::drawPC()
 	
 	for(size_t i = 0; i < vMap.size(); i++)
 	{
-		//cout << "Draw r,c [" << i <<"] = \t" <<vMap[i].rows << " , " << vMap[i].cols<< endl;
 		for(int j = 0; j < vMap[i].cols; j++)
 		{
 			glVertex3f(vMap[i].at<float>(0,j), vMap[i].at<float>(1,j), vMap[i].at<float>(2,j));
