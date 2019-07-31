@@ -43,7 +43,9 @@ namespace ORB_VISLAM
 			void show(cv::Mat &frame, 
 						std::vector<cv::KeyPoint> &kp, 
 						std::vector<std::pair<int,int>> &matches,
-						cv::Mat &loc3Dpts,
+						cv::Mat &locP3d,
+						cv::Mat &reprojPts,
+						cv::Mat &measuredPts,
 						std::string &frame_name);
 			std::vector<cv::Mat> vMap;
 			bool hasFrame;
@@ -62,6 +64,8 @@ namespace ORB_VISLAM
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
 			void drawPC();
+			void drawReprojError(cv::Mat &scaled_win, cv::Mat &measuredPts, 
+								cv::Mat &reprojectedPts);
 			
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);
 			void draw_matches(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp,

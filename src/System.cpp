@@ -84,13 +84,18 @@ void System::run(Mat &raw_frame, string &frame_name,
 	//visionPtr->sc = 1.0;	
 
 	visionPtr->Analyze(raw_frame, KP, matches);
-	visualizerPtr->show(raw_frame, KP, matches, visionPtr->visionMap, frame_name);
+	visualizerPtr->show(raw_frame, KP, matches, 
+						visionPtr->visionMap, 
+						visionPtr->vPt2D_rep,
+						visionPtr->vPt2D_measured,
+						frame_name);
 	
 	absPosePtr->set(T_GT);
 	saveMatrix(T_GT, file_gt);
 	saveMatrix(absPosePtr->rvec_abs, scale_GT,
-				visionPtr->front3DPtsOPCV, 
-				visionPtr->front3DPtsOWN, 
+				visionPtr->front3DPtsOPCV,
+				visionPtr->front3DPtsOWN,
+				visionPtr->repErr,
 				file_util);
 				
 	saveVOFile(visionPtr->T_loc_E, visionPtr->rvec_loc_E,
@@ -113,7 +118,12 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 	vector<pair<int,int>> matches;
 	
 	visionPtr->Analyze(raw_frame, KP, matches);
-	visualizerPtr->show(raw_frame, KP, matches, visionPtr->visionMap, frame_name);
+
+	visualizerPtr->show(raw_frame, KP, matches, 
+						visionPtr->visionMap, 
+						visionPtr->vPt2D_rep,
+						visionPtr->vPt2D_measured, 
+						frame_name);
 	
 	absPosePtr->calcPose(lat, lng, alt, roll, pitch, heading);
 	
@@ -122,17 +132,14 @@ void System::run(Mat &raw_frame, string &frame_name, double &gpsT,
 	
 	saveMatrix(absPosePtr->T_abs, file_gt);
 	saveMatrix(absPosePtr->rvec_abs, absPosePtr->AbsScale, 
-				visionPtr->front3DPtsOPCV, 
-				visionPtr->front3DPtsOWN, 
+				visionPtr->front3DPtsOPCV,
+				visionPtr->front3DPtsOWN,
+				visionPtr->repErr,
 				file_util);
 	
 				
-	saveVOFile(visionPtr->T_loc_E, visionPtr->rvec_loc_E,
-				file_vo_loc);
-	
-	saveVOFile(visionPtr->T_cam_E, 
-				visionPtr->rvec_E,
-				file_vo);
+	saveVOFile(visionPtr->T_loc_E, visionPtr->rvec_loc_E, file_vo_loc);
+	saveVOFile(visionPtr->T_cam_E, visionPtr->rvec_E, file_vo);
 }
 
 void System::save3Dpoints(vector<Mat> &p3ds, ofstream &file_)
@@ -197,7 +204,7 @@ void System::saveMatrix(Mat &Matrix, ofstream &file_)
 }
 
 void System::saveMatrix(Mat &Matrix, float &scale, float &frontOPCV, 
-						float &frontOWN, ofstream &file_)
+						float &frontOWN, float &rE, ofstream &file_)
 {
 	for(int r = 0; r < Matrix.rows; r++)
 	{
@@ -206,7 +213,7 @@ void System::saveMatrix(Mat &Matrix, float &scale, float &frontOPCV,
 			if (r == Matrix.rows-1 && c == Matrix.cols-1)
 			{
 				file_	<< setprecision(8)	<< Matrix.at<float>(r,c) 
-						<<","<< scale <<","<< frontOPCV <<","<< frontOWN << endl;
+						<<","<< scale <<","<< frontOPCV <<","<< frontOWN <<","<<rE<< endl;
 			}
 			else 
 			{

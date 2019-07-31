@@ -68,7 +68,7 @@ namespace ORB_VISLAM
 			void saveMatrix(cv::Mat &Matrix, std::ofstream &file_);
 			
 			void saveMatrix(cv::Mat &Matrix, float &scale, float &frontOPCV, 
-							float &frontOWN, std::ofstream &file_);
+							float &frontOWN, float &rE, std::ofstream &file_);
 			
 			void saveVOFile(cv::Mat &Tc_E, cv::Mat &rvec_E, std::ofstream &file_);
 			

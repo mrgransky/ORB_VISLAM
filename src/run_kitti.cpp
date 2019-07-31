@@ -223,7 +223,7 @@ int main( int argc, char** argv )
 	f_gt<<"T_00,T_01,T_02,T_03,T_10,T_11,T_12,T_13,T_20,T_21,T_22,T_23,T_30,T_31,T_32,T_33"<<endl;
 
 	f_util << fixed;
-	f_util << "rvecGTx,rvecGTy,rvecGTz,scale,front3DPtsOPCV,front3DPtsOWN" << endl;
+	f_util << "rvecGTx,rvecGTy,rvecGTz,scale,front3DPtsOPCV,front3DPtsOWN,repError" << endl;
 
 	char filename[400];
 	clock_t tStart = clock();

@@ -59,8 +59,10 @@ namespace ORB_VISLAM
 			
 			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 			std::vector<cv::Mat> map_3D;
-			cv::Mat visionMap;
+			cv::Mat visionMap, vPt2D_rep, vPt2D_measured;
 			
+			std::vector<float> reprojection_error;
+			float repErr;
 		private:
     		std::vector<cv::Mat> R_f_prev, t_f_prev;
     		float vMIN_SCALE, vdistTh_3DPts;
@@ -81,7 +83,6 @@ namespace ORB_VISLAM
 			
 			cv::Mat Rt_prev = cv::Mat::eye(3, 4, CV_32F);
 			cv::Mat Rt 		= cv::Mat::eye(3, 4, CV_32F);
-
 			int vWS;
 			size_t vMIN_NUM_FEAT;
 			float vSSD_TH, vSSD_ratio_TH;
@@ -103,16 +104,16 @@ namespace ORB_VISLAM
 								cv::Mat &Rt, cv::Mat &Points4D);
 			
 			void SetR_t(cv::Mat &R_, cv::Mat &t_, cv::Mat &Rt_);
-			void ChooseCorrectPose(std::vector<float> &good_vec, 
-						std::vector<cv::Mat> &Rt_vec, 
-						cv::Mat &R_, cv::Mat &t_);
 			
-			void ChooseCorrectPose(std::vector<float> &good_vec, 
-						std::vector<cv::Mat> &Rt_vec, 
-						std::vector<cv::Mat> &Pts3D_vec, 
-						cv::Mat &R_, cv::Mat &t_, cv::Mat &p3_);
-			
-			
+			void pose_AND_3dPts(std::vector<cv::Point2f> &dst, std::vector<float> &good_vec, 
+								std::vector<cv::Mat> &Rt_vec, std::vector<cv::Mat> &Pts3D_vec, 
+								cv::Mat &R_, cv::Mat &t_, cv::Mat &p3_, cv::Mat &measuredPts);
+						
+			void applyContraints(std::vector<cv::Point2f> &dst, cv::Mat &p3_raw, cv::Mat &Rt, 
+								cv::Mat &p3_front, cv::Mat &origMeasPts);
+								
+			void proj3D_2D(cv::Mat &p3_, cv::Mat &p2_);
+			void calcReprojErr(cv::Mat &measured, cv::Mat &reprojected, float &rE);
 			void Normalize2DPts(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst,
 								std::vector<cv::Mat> &src_normalized, 
 								std::vector<cv::Mat> &dst_normalized);
@@ -143,7 +144,7 @@ namespace ORB_VISLAM
 							std::vector<cv::Point2f> &dst, 
 							std::vector<int> &ref_kp_idx, 
 							std::vector<int> &kp_idx, 
-							std::vector<std::vector<cv::DMatch>> &all_matches,
+							std::vector<std::vector<cv::DMatch>> &possible_matches,
 							std::vector<std::pair<int,int>> &match_idx);
 			
 			std::vector<std::pair<int,int>> crossCheckMatching(	
@@ -155,7 +156,7 @@ namespace ORB_VISLAM
 											std::vector<cv::Point2f> &dst, 
 											std::vector<int> &ref_kp_idx, 
 											std::vector<int> &kp_idx, 
-											std::vector<std::vector<cv::DMatch>> &all_matches,
+											std::vector<std::vector<cv::DMatch>> &possible_matches,
 											std::vector<std::pair<int,int>> &match_idx);
 			
 			
@@ -169,7 +170,7 @@ namespace ORB_VISLAM
 			
 			void triangulateMyPoints(std::vector<cv::Point2f> &src, 
 									std::vector<cv::Point2f> &dst, 
-									cv::Mat &Rt, float &acceptedPts, cv::Mat & Pts3D);
+									cv::Mat &Rt, float &acceptance_rate, cv::Mat & P3_H_RAW);
 	
 			void GetPose(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst, 
 								cv::Mat &E);

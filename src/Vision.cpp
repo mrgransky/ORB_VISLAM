@@ -165,7 +165,6 @@ void Vision::Analyze(Mat &rawImg, vector<KeyPoint> &kp,
 	get_AKAZE_kp(rawImg, kp, descriptor);
 	//get_ORB_kp(rawImg, kp, descriptor);
 	
-	
 	//matching(rawImg, kp, matches);
 	matching(rawImg, kp, descriptor, matches);
 	
@@ -320,16 +319,17 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc,
 	
 	if (!ref_kp.empty())
 	{
-		vector<vector<DMatch>> all_matches;
+		vector<vector<DMatch>> possible_matches;
 		vector<Point2f> src, dst;
 		vector<int> ref_kp_idx, kp_idx;
 		
-		matcher->knnMatch(ref_desc, desc, all_matches, 2);
-		for(size_t i = 0; i < all_matches.size(); i++) 
+		matcher->knnMatch(ref_desc, desc, possible_matches, 2); // size = size(KP)
+		
+		for(size_t i = 0; i < possible_matches.size(); i++) 
 		{
-			DMatch first = all_matches[i][0];
-			float dist1 = all_matches[i][0].distance;
-			float dist2 = all_matches[i][1].distance;
+			DMatch first = possible_matches[i][0];
+			float dist1 = possible_matches[i][0].distance;
+			float dist2 = possible_matches[i][1].distance;
 			if(dist1 < nn_match_ratio * dist2) 
 			{
 				ref_kp_idx.push_back(first.queryIdx);
@@ -339,14 +339,14 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc,
 				dst.push_back(kp[first.trainIdx].pt);
 			}
 		}
-		getDummy(src, dst, ref_kp_idx, kp_idx, all_matches, match_idx);
-		//essential_matrix_inliers(src, dst, ref_kp_idx, kp_idx, all_matches, match_idx);
+		getDummy(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);
+		//essential_matrix_inliers(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);
 	}
 }
 
 void Vision::getDummy(vector<Point2f> &src, vector<Point2f> &dst,
 										vector<int> &ref_kp_idx, vector<int> &kp_idx,
-										vector<vector<DMatch>> &all_matches,
+										vector<vector<DMatch>> &possible_matches,
 										vector<pair<int,int>> &match_idx)
 {
 	double minVal,maxVal;
@@ -356,24 +356,23 @@ void Vision::getDummy(vector<Point2f> &src, vector<Point2f> &dst,
 	//double minDis2EpiLine = 0.006 * maxVal;
 	double minDis2EpiLine = .5; 
 	double confid = .99;
-	vector<uchar> mask;
+	vector<uchar> matching_mask; // ransac
 	
-	Mat E = findEssentialMat(dst, src, mK, RANSAC, confid, minDis2EpiLine, mask);
+	Mat E = findEssentialMat(dst, src, mK, RANSAC, confid, minDis2EpiLine, matching_mask);
 	
-	int inliers_num = countNonZero(mask);
-	for(size_t nm = 0; nm < mask.size(); nm++)
+	int inliers_num = countNonZero(matching_mask);
+	for(size_t nm = 0; nm < matching_mask.size(); nm++)
 	{
-		if(mask[nm])
+		if(matching_mask[nm])
 		{
 			match_idx.push_back(make_pair(ref_kp_idx[nm], kp_idx[nm]));
 			srcInlier.push_back(src[nm]);
 			dstInlier.push_back(dst[nm]);
 		}
 	}
-	
-	cout << "2D Matches:\n"; 
-	cout << "\tALL\tMASK\tINLIERS\n";
-	cout 	<< '\t' << all_matches.size() 	<< '\t' 	<< mask.size() 
+	cout << "Matching:\n"; 
+	cout << "\tKPS\tMATCHES\tINLIERS\n";
+	cout 	<< '\t' << possible_matches.size() 	<< '\t' 	<< matching_mask.size() 
 			<< '\t' << inliers_num 			<< '\n';
 
 	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
@@ -385,7 +384,7 @@ void Vision::getDummy(vector<Point2f> &src, vector<Point2f> &dst,
 
 void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst,
 										vector<int> &ref_kp_idx, vector<int> &kp_idx,
-										vector<vector<DMatch>> &all_matches,
+										vector<vector<DMatch>> &possible_matches,
 										vector<pair<int,int>> &match_idx)
 {
 	double minVal,maxVal;
@@ -395,14 +394,14 @@ void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst
 	//double minDis2EpiLine = 0.006 * maxVal;
 	double minDis2EpiLine = .5; 
 	double confid = .99;
-	vector<uchar> mask;
+	vector<uchar> matching_mask; // ransac
 	
-	Mat E = findEssentialMat(dst, src, mK, RANSAC, confid, minDis2EpiLine, mask);
+	Mat E = findEssentialMat(dst, src, mK, RANSAC, confid, minDis2EpiLine, matching_mask);
 	
-	int inliers_num = countNonZero(mask);
-	for(size_t nm = 0; nm < mask.size(); nm++)
+	int inliers_num = countNonZero(matching_mask);
+	for(size_t nm = 0; nm < matching_mask.size(); nm++)
 	{
-		if(mask[nm])
+		if(matching_mask[nm])
 		{
 			match_idx.push_back(make_pair(ref_kp_idx[nm], kp_idx[nm]));
 			srcInlier.push_back(src[nm]);
@@ -411,8 +410,8 @@ void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst
 	}
 	
 	cout << "2D Matches:\n"; 
-	cout << "\tALL\tMASK\tINLIERS\n";
-	cout 	<< '\t' << all_matches.size() 	<< '\t' 	<< mask.size() 
+	cout << "\tKPS\tMATCHES\tINLIERS\n";
+	cout 	<< '\t' << possible_matches.size() 	<< '\t' 	<< matching_mask.size() 
 			<< '\t' << inliers_num 			<< '\n';
 
 	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
@@ -421,14 +420,32 @@ void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst
 		cout << "----------------------------------------------------------------" << endl;
 	}
 }
+void Vision::proj3D_2D(Mat &p3_, Mat &p2_)
+{
+	if(!p3_.empty())
+	{
+		// x = P * X
+		Mat P_prev = mK * Rt_prev;
+		Mat p2_homogen = Mat::ones(3, p3_.cols, p3_.type());
+		
+		p2_homogen = P_prev * p3_;
+	
+		p2_homogen.row(0) /= p2_homogen.row(2);
+		p2_homogen.row(1) /= p2_homogen.row(2);
+		p2_homogen.row(2) /= p2_homogen.row(2);
+		
+		p2_homogen.copyTo(p2_);
+		//get_info(p2_, "\npt2D_h:");
+	}
+}
 
 void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 {		
-	Mat R1, R2, t1, t2, R_local, t_local, P3d;
+	Mat R1, R2, t1, t2, R_local, t_local, P3d, reprojPts, measuredPts;
 	vector<Mat> p3D_loc;
 	vector<float> good_vec(4);
 	vector<Mat> Rt_vec(4);
-	vector<Mat> Pts3D_vec(4);
+	vector<Mat> Pts3D_raw(4);
 	
 	// 1. Decompose Essential Matrix to obtain R1, R2, t:
 	decomE(E, R1, R2, t1, t2);
@@ -440,7 +457,7 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 	
 	for(size_t i = 0; i < Rt_vec.size(); i++)
 	{
-		triangulateMyPoints(src, dst, Rt_vec[i], good_vec[i], Pts3D_vec[i]);
+		triangulateMyPoints(src, dst, Rt_vec[i], good_vec[i], Pts3D_raw[i]);
 	}
 	
 	cout << "\nFront 3D Pts:\n"; 
@@ -451,9 +468,12 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 			<< '\t' << setprecision(3) << good_vec[3] 
 			<< '\n';
 
-	// 2. Obtain correct Pose: // cheirality constraint:
-	//ChooseCorrectPose(good_vec, Rt_vec, R_local, t_local);
-	ChooseCorrectPose(good_vec, Rt_vec, Pts3D_vec, R_local, t_local, P3d);
+	// 2. Obtain correct Pose and 3D pts: 
+	pose_AND_3dPts(dst, good_vec, Rt_vec, Pts3D_raw, R_local, t_local, P3d, measuredPts);
+	
+	proj3D_2D(P3d, reprojPts);
+		
+	calcReprojErr(measuredPts, reprojPts, repErr);
 	
 	if(t_local.at<float>(2) < 0)
 	{
@@ -463,17 +483,9 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 	SetR_t(R_local, t_local, Rt);
 	Rodrigues(R_local, rvec_loc_E);
 	
-	
 	if (sc > vMIN_SCALE &&	t_local.at<float>(2) > t_local.at<float>(0) &&
 							t_local.at<float>(2) > t_local.at<float>(1))
 	{
-		/*Reconstruction(src, dst, Rt, p3D_loc);
-		Mat visLOCAL(3, p3D_loc.size(), CV_32F);
-		for (size_t i = 0; i < p3D_loc.size(); i++)
-		{
-			p3D_loc[i].copyTo(visLOCAL.col(i));
-		}
-		visLOCAL.copyTo(visionMap);*/
 		P3d.copyTo(visionMap);
 		t_f_E = sc*(R_f_E * t_local) + t_f_prev_E;
 		R_f_E = R_f_prev_E * R_local;
@@ -487,108 +499,108 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 	t_f_prev_E 		= t_f_E.clone();
 }
 
-void Vision::ChooseCorrectPose(vector<float> &good_vec, vector<Mat> &Rt_vec, Mat &R_, Mat &t_)
+void Vision::calcReprojErr(Mat &measured, Mat &reprojected, float &rE)
 {
-	R_.create(3, 3, CV_32F);
-	t_.create(3, 1, CV_32F);
-	
-	if( good_vec[0] >= good_vec[1] && 
-		good_vec[0] >= good_vec[2] && 
-		good_vec[0] >= good_vec[3])
+	if(!measured.empty())
 	{
-		front3DPtsOWN = good_vec[0];
-		//cout << "sol_0 is correct!" << endl;
-		Rt_vec[0].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Rt_vec[0].col(3).copyTo(t_);
-	}
-	else if(good_vec[1] >= good_vec[0] && 
-			good_vec[1] >= good_vec[2] && 
-			good_vec[1] >= good_vec[3])
-	{
-		front3DPtsOWN = good_vec[1];
-		//cout << "sol_1 is correct!" << endl;
-		Rt_vec[1].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Rt_vec[1].col(3).copyTo(t_);
-	}
-	else if(good_vec[2] >= good_vec[0] && 
-			good_vec[2] >= good_vec[1] && 
-			good_vec[2] >= good_vec[3])
-	{
-		front3DPtsOWN = good_vec[2];
-		//cout << "sol_2 is correct!" << endl;
-		Rt_vec[2].rowRange(0,3).colRange(0,3).copyTo(R_);
-		//Rt_vec[2].col(3).copyTo(t_);
-		Mat TEM = Rt_vec[2].col(3) * -1;
-		TEM.copyTo(t_);
-	}
-	else if(good_vec[3] >= good_vec[0] && 
-			good_vec[3] >= good_vec[1] && 
-			good_vec[3] >= good_vec[2])
-	{
-		front3DPtsOWN = good_vec[2];
-		//cout << "sol_3 is correct!" << endl;
-		Rt_vec[3].rowRange(0,3).colRange(0,3).copyTo(R_);
-		//Rt_vec[3].col(3).copyTo(t_);
-		Mat TEMP_ = Rt_vec[3].col(3) * -1;
-		TEMP_.copyTo(t_);
-	}
-	else
-	{
-		cout << "No SOLUTION FOUND!!!" << endl;
-		exit(EXIT_FAILURE);
+		reprojected.copyTo(vPt2D_rep);
+		measured.copyTo(vPt2D_measured);
+		rE = cv::norm(reprojected, measured, NORM_L2)/ (float)reprojected.cols;
+		cout << "\n reprojection error = "<< rE << endl;
 	}
 }
 
-void Vision::ChooseCorrectPose(vector<float> &good_vec, vector<Mat> &Rt_vec, 
-								vector<Mat> &Pts3D_vec, Mat &R_, Mat &t_, Mat &p3_)
+void Vision::applyContraints(vector<Point2f> &dst, Mat &p3_raw, Mat &Rt, Mat &p3_front, Mat &origMeasPts)
+{
+	// cheirality constraint:
+	Mat p3_raw_cam1 = Rt * p3_raw;
+	vector<int> p3_front_idx;
+	for(int i = 0; i < p3_raw.cols; i++)
+	{
+		if(	(p3_raw.at<float>(2,i) 		> 0) 				&& 
+			(p3_raw.at<float>(2,i) 		< vdistTh_3DPts) 	&&
+			(p3_raw_cam1.at<float>(2,i) 	> 0) 				&& 
+			(p3_raw_cam1.at<float>(2,i) 	< vdistTh_3DPts))
+		{
+			p3_front_idx.push_back(i);
+		}		
+	}
+	
+
+	p3_front.create(4, p3_front_idx.size(), CV_32F);
+	origMeasPts.create(3, p3_front_idx.size(), CV_32F);
+	
+	for(size_t k = 0; k < p3_front_idx.size(); k++)
+	{
+		Mat temp = p3_raw.col(p3_front_idx[k]);
+		temp.copyTo(p3_front.col(k));
+		
+		origMeasPts.at<float>(0,k) = dst[p3_front_idx[k]].x;
+		origMeasPts.at<float>(1,k) = dst[p3_front_idx[k]].y;
+		origMeasPts.at<float>(2,k) = 1;
+	}
+}
+
+void Vision::pose_AND_3dPts(vector<Point2f> &dst, vector<float> &good_vec, vector<Mat> &Rt_vec, 
+								vector<Mat> &Pts3D_vec, 
+								Mat &R_, Mat &t_, Mat &p3_, Mat &measuredPts)
 {
 	R_.create(3, 3, CV_32F);
 	t_.create(3, 1, CV_32F);
-	p3_.create(3, 1, CV_32F);
 	
 	if( good_vec[0] >= good_vec[1] && 
 		good_vec[0] >= good_vec[2] && 
 		good_vec[0] >= good_vec[3])
 	{
 		front3DPtsOWN = good_vec[0];
-		//cout << "sol_0 is correct!" << endl;
 		Rt_vec[0].rowRange(0,3).colRange(0,3).copyTo(R_);
 		Rt_vec[0].col(3).copyTo(t_);
-		Pts3D_vec[0].copyTo(p3_);
+		
+		Mat constrained_3DPts, measured2DPts;
+		applyContraints(dst, Pts3D_vec[0], Rt_vec[0], constrained_3DPts, measured2DPts);
+		constrained_3DPts.copyTo(p3_);
+		measured2DPts.copyTo(measuredPts);
 	}
 	else if(good_vec[1] >= good_vec[0] && 
 			good_vec[1] >= good_vec[2] && 
 			good_vec[1] >= good_vec[3])
 	{
 		front3DPtsOWN = good_vec[1];
-		//cout << "sol_1 is correct!" << endl;
 		Rt_vec[1].rowRange(0,3).colRange(0,3).copyTo(R_);
 		Rt_vec[1].col(3).copyTo(t_);
-		Pts3D_vec[1].copyTo(p3_);
+		
+		Mat constrained_3DPts, measured2DPts;
+		applyContraints(dst, Pts3D_vec[1], Rt_vec[1], constrained_3DPts, measured2DPts);
+		constrained_3DPts.copyTo(p3_);
+		measured2DPts.copyTo(measuredPts);
 	}
 	else if(good_vec[2] >= good_vec[0] && 
 			good_vec[2] >= good_vec[1] && 
 			good_vec[2] >= good_vec[3])
 	{
 		front3DPtsOWN = good_vec[2];
-		//cout << "sol_2 is correct!" << endl;
 		Rt_vec[2].rowRange(0,3).colRange(0,3).copyTo(R_);
-		//Rt_vec[2].col(3).copyTo(t_);
 		Mat TEM = Rt_vec[2].col(3) * -1;
 		TEM.copyTo(t_);
-		Pts3D_vec[2].copyTo(p3_);
+		
+		Mat constrained_3DPts, measured2DPts;
+		applyContraints(dst, Pts3D_vec[2], Rt_vec[2], constrained_3DPts, measured2DPts);
+		constrained_3DPts.copyTo(p3_);
+		measured2DPts.copyTo(measuredPts);
 	}
 	else if(good_vec[3] >= good_vec[0] && 
 			good_vec[3] >= good_vec[1] && 
 			good_vec[3] >= good_vec[2])
 	{
 		front3DPtsOWN = good_vec[2];
-		//cout << "sol_3 is correct!" << endl;
 		Rt_vec[3].rowRange(0,3).colRange(0,3).copyTo(R_);
-		//Rt_vec[3].col(3).copyTo(t_);
 		Mat TEMP_ = Rt_vec[3].col(3) * -1;
 		TEMP_.copyTo(t_);
-		Pts3D_vec[3].copyTo(p3_);
+		
+		Mat constrained_3DPts, measured2DPts;
+		applyContraints(dst, Pts3D_vec[3], Rt_vec[3], constrained_3DPts, measured2DPts);
+		constrained_3DPts.copyTo(p3_);
+		measured2DPts.copyTo(measuredPts);
 	}
 	else
 	{
@@ -674,6 +686,8 @@ void Vision::PoseFromEssentialMatrix(vector<Point2f> &src, vector<Point2f> &dst,
 		}
 		t_f_E = sc*(R_f_E * t_local) + t_f_prev_E;
 		R_f_E = R_f_prev_E * R_local;
+		// TODO: size of visionMap has been changed! seg fault in visualize...
+		// TODO: make 3dpt cv::Mat and homogenous!
 		visLOCAL.copyTo(visionMap);
 	}
 	Rodrigues(R_f_E, rvec_E);
@@ -726,14 +740,12 @@ void Vision::Normalize2DPts(vector<Point2f> &src, vector<Point2f> &dst,
 }
 
 void Vision::triangulateMyPoints(vector<Point2f> &src, vector<Point2f> &dst, 
-									Mat &Rt, float &acceptedPts, Mat &Pts3D)
+									Mat &Rt, float &acceptance_rate, Mat &P3_H_RAW)
 {
 	vector<Mat> src_norm, dst_norm;
 	Normalize2DPts(src, dst, src_norm, dst_norm);
-	//Mat pt3D_cam0(3, src_norm.size(), CV_32F), pt3D_cam1(3, dst_norm.size(), CV_32F);
 	Mat Pts4D, constraints;
 	Extract4DPts(src_norm, dst_norm, Rt, Pts4D);
-	vector<uchar> status(Pts4D.cols, 0);
 	
 	// paper: Nister:
 	// cam_0:
@@ -752,26 +764,8 @@ void Vision::triangulateMyPoints(vector<Point2f> &src, vector<Point2f> &dst,
 	constraints = (Pts4D_cam1.row(2) > 0) & constraints;
 	constraints = (Pts4D_cam1.row(2) < vdistTh_3DPts) & constraints;
 	int nz = countNonZero(constraints);
-	acceptedPts = ((float)nz / (float)constraints.cols);
-
-	vector<int> constraints_idx;
-	for(int i = 0; i < Pts4D.cols; i++)
-	{
-		if(	(Pts4D.at<float>(2,i) 		> 0) 				&& 
-			(Pts4D.at<float>(2,i) 		< vdistTh_3DPts) 	&&
-			(Pts4D_cam1.at<float>(2,i) 	> 0) 				&& 
-			(Pts4D_cam1.at<float>(2,i) 	< vdistTh_3DPts))
-		{
-			constraints_idx.push_back(i);
-		}		
-	}
-
-	Pts3D.create(3, constraints_idx.size(), CV_32F);	
-	for(size_t k = 0; k < constraints_idx.size(); k++)
-	{
-		Mat temp = Pts4D.rowRange(0,3).col(constraints_idx[k]);
-		temp.copyTo(Pts3D.col(k));
-	}
+	acceptance_rate = ((float)nz / (float)constraints.cols);
+	Pts4D.copyTo(P3_H_RAW);
 }
 
 void Vision::Extract4DPts(vector<Mat> &src, vector<Mat> &dst, Mat &Rt, Mat &Points4D)
