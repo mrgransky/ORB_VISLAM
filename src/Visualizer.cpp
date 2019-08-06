@@ -31,10 +31,13 @@ Visualizer::Visualizer(Mat &im, Mat &T_GT, Mat &T_cam_E,
 	vImg_W = im.cols;
 	vImg_H = im.rows;
 	
-	vImgScaled_W = vImg_W * vScale;
-	vImgScaled_H = vImg_H * vScale;
+	imgScaled_W = vImg_W * vScale;
+	imgScaled_H = vImg_H * vScale;
 			
-	vImgScaled = Mat::zeros(cv::Size(vImgScaled_W + vImgScaled_W, vImgScaled_H), CV_8UC3);
+	vimgScaledHorr 	= Mat::zeros(cv::Size(imgScaled_W + imgScaled_W, imgScaled_H), CV_8UC3);
+	vimgScaledVer 	= Mat::zeros(cv::Size(imgScaled_W, imgScaled_H + imgScaled_H), CV_8UC3);
+	
+	vImgError 	= Mat::zeros(cv::Size(vImg_W, vImg_H), CV_8UC3);
 }
 
 struct Visualizer::Triplet
@@ -60,7 +63,7 @@ void Visualizer::draw_KP(Mat &scaled_win, vector<KeyPoint> &kp)
 	for (size_t i = 0; i < kp.size(); i++)
 	{
 		Point2f pt_curr(.5*scaled_win.cols + vScale*kp[i].pt.x, vScale*kp[i].pt.y);
-		cv::circle(scaled_win, pt_curr, 1, Scalar(1,240,195), FILLED);
+		cv::circle(scaled_win, pt_curr, 1, Scalar(1,225,225), FILLED);
 	}
 }
 
@@ -77,32 +80,29 @@ void Visualizer::draw_matches(Mat &scaled_win, vector<KeyPoint> &kp,
 			int match 	= matches[i].second;
 		
 			Point2f pt_1 = vScale * vKP_ref[parent].pt;
-			cv::circle(scaled_win, pt_1, 2, Scalar(200,7,7), FILLED);
+			cv::circle(scaled_win, pt_1, 2, Scalar(10,210,1), FILLED);
 	
 			Point2f pt_2(.5*scaled_win.cols + vScale * kp[match].pt.x, vScale * kp[match].pt.y);
-			cv::circle(scaled_win, pt_2, 2, Scalar(200,7,7), FILLED);
+			cv::circle(scaled_win, pt_2, 2, Scalar(10,210,1), FILLED);
 	
-			/*cv::line(scaled_win, pt_1, pt_2, Scalar(rand() % max + min, 
-						rand() % max + min, rand() % max + min));*/
+			cv::line(scaled_win, pt_1, pt_2, Scalar(rand() % max + min, 
+						rand() % max + min, rand() % max + min));
 		}
 	}
 }
 
-void Visualizer::drawReprojError(Mat &scaled_win, Mat &measuredPts, Mat &reprojectedPts)
+void Visualizer::drawReprojError(Mat &winFrame, Mat &measuredPts, Mat &reprojectedPts)
 {
 	if (!vKP_ref.empty())
 	{
 		for (int i = 0; i < reprojectedPts.cols; i++)
 		{
-			Point2f pt_rep(.5*scaled_win.cols 	+ 	vScale*reprojectedPts.at<float>(0,i), 
-								0				+	vScale*reprojectedPts.at<float>(1,i));
-
-			Point2f pt_meas(.5*scaled_win.cols 	+ 	vScale*measuredPts.at<float>(0,i), 
-								0				+	vScale*measuredPts.at<float>(1,i));
+			Point2f pt_rep(reprojectedPts.at<float>(0,i), reprojectedPts.at<float>(1,i));
+			Point2f pt_meas(measuredPts.at<float>(0,i), measuredPts.at<float>(1,i));
 			
-			cv::circle(scaled_win, pt_rep, 2, Scalar(180,1,2), FILLED);
-			cv::circle(scaled_win, pt_meas, 2, Scalar(1,2,211), FILLED);
-			cv::line(scaled_win, pt_meas, pt_rep, Scalar(1,255,1));
+			cv::circle(winFrame, pt_rep, 2, Scalar(180,1,2), FILLED);
+			cv::circle(winFrame, pt_meas, 2, Scalar(1,2,211), FILLED);
+			cv::line(winFrame, pt_meas, pt_rep, Scalar(1,255,1));
 		}
 	}
 }
@@ -119,32 +119,35 @@ void Visualizer::show(Mat &frame,
 	
 	Mat vImg_tmp, vImgR_tmp;
 	
-	resize(vImg, vImg_tmp, Size(vImgScaled_W, vImgScaled_H));
-	vImg_tmp.copyTo(vImgScaled(Rect(vImgScaled_W, 0, vImgScaled_W, vImgScaled_H)));
+	resize(vImgR, vImgR_tmp, Size(imgScaled_W, imgScaled_H));
+	vImgR_tmp.copyTo(vimgScaledHorr(Rect(0, 0, imgScaled_W, imgScaled_H)));
 	
-	resize(vImgR, vImgR_tmp, Size(vImgScaled_W, vImgScaled_H));
-	vImgR_tmp.copyTo(vImgScaled(Rect(0, 0, vImgScaled_W, vImgScaled_H)));
+	resize(vImg, vImg_tmp, Size(imgScaled_W, imgScaled_H));
+	vImg_tmp.copyTo(vimgScaledHorr(Rect(imgScaled_W, 0, imgScaled_W, imgScaled_H)));
+	
+	vImg.copyTo(vImgError);
 
 	stringstream s_img, s_imgR;
 	s_img 	<< vImg_name;
 	s_imgR 	<< vImgR_name;
 
-	//draw_KP(vImgScaled, kp);
-	//draw_matches(vImgScaled, kp, matches);
-	drawReprojError(vImgScaled, measuredPts, reprojPts);
+	//draw_KP(vimgScaledHorr, kp);
+	//draw_matches(vimgScaledHorr, kp, matches);
+	drawReprojError(vImgError, measuredPts, reprojPts);
 	
 	Mat vloc;
 	locP3d.copyTo(vloc);
 	vglob = Mat::zeros(3, vloc.cols, vloc.type());
 	getGlobalPTs3D(vloc, vglob);
 	
-	cv::putText(vImgScaled, s_imgR.str(),
-				cv::Point(.01*vImgScaled.cols, .1*vImgScaled.rows),
-    			cv::FONT_HERSHEY_PLAIN, 1, Scalar(5,200,210), 2, LINE_4);
+	cv::putText(vimgScaledHorr, s_imgR.str(),
+				cv::Point(.01*vimgScaledHorr.cols, .1*vimgScaledHorr.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar(5,200,210), 2, FILLED);
 	
-	cv::putText(vImgScaled, s_img.str(), 
-				cv::Point(.01*vImgScaled.cols + .5*vImgScaled.cols, .1*vImgScaled.rows),
-    			cv::FONT_HERSHEY_PLAIN, 1, Scalar(5,220,210), 2, LINE_4);
+	cv::putText(vimgScaledHorr, s_img.str(), 
+				cv::Point(.01*vimgScaledHorr.cols + .5*vimgScaledHorr.cols, 
+							.1*vimgScaledHorr.rows),
+    			cv::FONT_HERSHEY_PLAIN, 1, Scalar(5,220,210), 2, FILLED);
     			
 	vImgR 		= vImg;
 	vImgR_name 	= vImg_name;
@@ -166,11 +169,12 @@ void Visualizer::run()
 {
 	thread t1(&Visualizer::openCV_, this);
 	thread t2(&Visualizer::openGL_, this);
-	//thread t3(&Visualizer::PCL_, this);
+	
+	//thread t4(&Visualizer::PCL_, this);
 
 	t1.join();
 	t2.join();
-	//t3.join();
+	//t4.join();
 }
 
 void Visualizer::PCL_()
@@ -193,13 +197,15 @@ void Visualizer::PCL_()
 
 void Visualizer::openCV_()
 {
+	string frameWinName = "Matches";
+	string frameError = "Reprojection Error";
 	
-	std::string frameWinName = "Image_Frames";
 	if(!vImg.empty())
 	{	
 		while(hasFrame)
 		{	
-			imshow(frameWinName, vImgScaled);
+			//imshow(frameWinName, vimgScaledHorr);
+			imshow(frameError, vImgError);
 			waitKey(vFPS);
 		}
 	}

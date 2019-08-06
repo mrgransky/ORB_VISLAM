@@ -37,7 +37,11 @@ namespace ORB_VISLAM
 			
 			cv::Mat vImgR 	= cv::Mat::zeros(640, 480, CV_8UC3);
 			std::string vImgR_name = "NULL";
-			cv::Mat vImgScaled = cv::Mat::zeros(640, 480, CV_8UC3);
+			
+			cv::Mat vimgScaledHorr = cv::Mat::zeros(640, 480, CV_8UC3);
+			cv::Mat vimgScaledVer = cv::Mat::zeros(640, 480, CV_8UC3);
+			cv::Mat vImgError = cv::Mat::zeros(640, 480, CV_8UC3);
+			
 			std::vector<cv::KeyPoint> vKP_ref;
 
 			void show(cv::Mat &frame, 
@@ -57,14 +61,14 @@ namespace ORB_VISLAM
 			void getGlobalPTs3D(cv::Mat &loc, cv::Mat &glob);
 
 			std::mutex visualizerMutex;
-			int vImg_W, vImg_H, vImgScaled_W, vImgScaled_H;
+			int vImg_W, vImg_H, imgScaled_W, imgScaled_H;
 			float vScale;
 			int vFPS;
 			void draw_path(std::vector<Triplet> &vertices, float r, float g, float b);
 			void draw(pangolin::OpenGlMatrix &T, float r, float g, float b);
 			void draw_KF(std::vector<pangolin::OpenGlMatrix> &KeyFrames);
 			void drawPC();
-			void drawReprojError(cv::Mat &scaled_win, cv::Mat &measuredPts, 
+			void drawReprojError(cv::Mat &winFrame, cv::Mat &measuredPts, 
 								cv::Mat &reprojectedPts);
 			
 			void draw_KP(cv::Mat &scaled_win, std::vector<cv::KeyPoint> &kp);
@@ -73,6 +77,7 @@ namespace ORB_VISLAM
 
 			void drawWRLD();
 			void openCV_();
+			
 			void openGL_();
 			void PCL_();
 	};

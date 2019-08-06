@@ -339,8 +339,9 @@ void Vision::matching(Mat &img, vector<KeyPoint> &kp, Mat &desc,
 				dst.push_back(kp[first.trainIdx].pt);
 			}
 		}
-		getDummy(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);
+		//getDummy(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);
 		//essential_matrix_inliers(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);
+		homography_matrix_inliers(src, dst, ref_kp_idx, kp_idx, possible_matches, match_idx);	
 	}
 }
 
@@ -420,22 +421,24 @@ void Vision::essential_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst
 		cout << "----------------------------------------------------------------" << endl;
 	}
 }
-void Vision::proj3D_2D(Mat &p3_, Mat &p2_)
+
+void Vision::proj3D_2D(Mat &p3_, Mat &p2_, Mat &Rt_)
 {
 	if(!p3_.empty())
 	{
 		// x = P * X
 		Mat P_prev = mK * Rt_prev;
+		Mat P_ = mK * Rt_;
+		
 		Mat p2_homogen = Mat::ones(3, p3_.cols, p3_.type());
 		
-		p2_homogen = P_prev * p3_;
+		p2_homogen = P_ * p3_;
 	
 		p2_homogen.row(0) /= p2_homogen.row(2);
 		p2_homogen.row(1) /= p2_homogen.row(2);
 		p2_homogen.row(2) /= p2_homogen.row(2);
 		
 		p2_homogen.copyTo(p2_);
-		//get_info(p2_, "\npt2D_h:");
 	}
 }
 
@@ -443,42 +446,39 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 {		
 	Mat R1, R2, t1, t2, R_local, t_local, P3d, reprojPts, measuredPts;
 	vector<Mat> p3D_loc;
-	vector<float> good_vec(4);
-	vector<Mat> Rt_vec(4);
-	vector<Mat> Pts3D_raw(4);
+	vector<float> frontPts_rate(4);
+	vector<Mat> Rt_all(4);
+	vector<Mat> p3_raw(4);
 	
 	// 1. Decompose Essential Matrix to obtain R1, R2, t:
 	decomE(E, R1, R2, t1, t2);
 	
-	SetR_t(R1, t1, Rt_vec[0]);
-	SetR_t(R2, t1, Rt_vec[1]);
-	SetR_t(R1, t2, Rt_vec[2]);	
-	SetR_t(R2, t2, Rt_vec[3]);
+	SetR_t(R1, t1, Rt_all[0]);
+	SetR_t(R2, t1, Rt_all[1]);
+	SetR_t(R1, t2, Rt_all[2]);	
+	SetR_t(R2, t2, Rt_all[3]);
 	
-	for(size_t i = 0; i < Rt_vec.size(); i++)
+	for(size_t i = 0; i < Rt_all.size(); i++)
 	{
-		triangulateMyPoints(src, dst, Rt_vec[i], good_vec[i], Pts3D_raw[i]);
+		triangulateMyPoints(src, dst, Rt_all[i], frontPts_rate[i], p3_raw[i]);
 	}
 	
 	cout << "\nFront 3D Pts:\n"; 
 	cout << "\tSOL_0\tSOL_1\tSOL_2\tSOL_3\n";
-	cout 	<< '\t' << setprecision(3) << good_vec[0] 
-			<< '\t' << setprecision(3) << good_vec[1] 
-			<< '\t' << setprecision(3) << good_vec[2] 
-			<< '\t' << setprecision(3) << good_vec[3] 
+	cout 	<< '\t' << setprecision(3) << frontPts_rate[0] 
+			<< '\t' << setprecision(3) << frontPts_rate[1] 
+			<< '\t' << setprecision(3) << frontPts_rate[2] 
+			<< '\t' << setprecision(3) << frontPts_rate[3] 
 			<< '\n';
 
 	// 2. Obtain correct Pose and 3D pts: 
-	pose_AND_3dPts(dst, good_vec, Rt_vec, Pts3D_raw, R_local, t_local, P3d, measuredPts);
-	
-	proj3D_2D(P3d, reprojPts);
-		
-	calcReprojErr(measuredPts, reprojPts, repErr);
+	pose_AND_3dPts(dst, frontPts_rate, Rt_all, p3_raw, R_local, t_local, P3d, measuredPts);
 	
 	if(t_local.at<float>(2) < 0)
 	{
 		t_local.at<float>(2) *= -1.0f;
 	}
+	
 	setCurrentPose(R_local, t_local, T_loc_E);
 	SetR_t(R_local, t_local, Rt);
 	Rodrigues(R_local, rvec_loc_E);
@@ -497,17 +497,10 @@ void Vision::GetPose(vector<Point2f> &src, vector<Point2f> &dst, Mat &E)
 	R_f_prev_E 		= R_f_E.clone();
 	rvec_prev_E 	= rvec_E.clone();	
 	t_f_prev_E 		= t_f_E.clone();
-}
 
-void Vision::calcReprojErr(Mat &measured, Mat &reprojected, float &rE)
-{
-	if(!measured.empty())
-	{
-		reprojected.copyTo(vPt2D_rep);
-		measured.copyTo(vPt2D_measured);
-		rE = cv::norm(reprojected, measured, NORM_L2)/ (float)reprojected.cols;
-		cout << "\n reprojection error = "<< rE << endl;
-	}
+
+	proj3D_2D(P3d, reprojPts, Rt);		
+	calcReprojErr(measuredPts, reprojPts, repErr);
 }
 
 void Vision::applyContraints(vector<Point2f> &dst, Mat &p3_raw, Mat &Rt, Mat &p3_front, Mat &origMeasPts)
@@ -517,15 +510,14 @@ void Vision::applyContraints(vector<Point2f> &dst, Mat &p3_raw, Mat &Rt, Mat &p3
 	vector<int> p3_front_idx;
 	for(int i = 0; i < p3_raw.cols; i++)
 	{
-		if(	(p3_raw.at<float>(2,i) 		> 0) 				&& 
-			(p3_raw.at<float>(2,i) 		< vdistTh_3DPts) 	&&
+		if(	(p3_raw.at<float>(2,i) 			> 0) 				&& 
+			(p3_raw.at<float>(2,i) 			< vdistTh_3DPts) 	&&
 			(p3_raw_cam1.at<float>(2,i) 	> 0) 				&& 
 			(p3_raw_cam1.at<float>(2,i) 	< vdistTh_3DPts))
 		{
 			p3_front_idx.push_back(i);
 		}		
 	}
-	
 
 	p3_front.create(4, p3_front_idx.size(), CV_32F);
 	origMeasPts.create(3, p3_front_idx.size(), CV_32F);
@@ -541,64 +533,64 @@ void Vision::applyContraints(vector<Point2f> &dst, Mat &p3_raw, Mat &Rt, Mat &p3
 	}
 }
 
-void Vision::pose_AND_3dPts(vector<Point2f> &dst, vector<float> &good_vec, vector<Mat> &Rt_vec, 
-								vector<Mat> &Pts3D_vec, 
-								Mat &R_, Mat &t_, Mat &p3_, Mat &measuredPts)
+void Vision::pose_AND_3dPts(vector<Point2f> &dst, 	vector<float> &frontPts_rate, 
+							vector<Mat> &Rt_all, 	vector<Mat> &Pts3D_vec, 
+							Mat &R_, Mat &t_, Mat &p3_, Mat &measuredPts)
 {
 	R_.create(3, 3, CV_32F);
 	t_.create(3, 1, CV_32F);
 	
-	if( good_vec[0] >= good_vec[1] && 
-		good_vec[0] >= good_vec[2] && 
-		good_vec[0] >= good_vec[3])
+	if( frontPts_rate[0] >= frontPts_rate[1] && 
+		frontPts_rate[0] >= frontPts_rate[2] && 
+		frontPts_rate[0] >= frontPts_rate[3])
 	{
-		front3DPtsOWN = good_vec[0];
-		Rt_vec[0].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Rt_vec[0].col(3).copyTo(t_);
+		front3DPtsOWN = frontPts_rate[0];
+		Rt_all[0].rowRange(0,3).colRange(0,3).copyTo(R_);
+		Rt_all[0].col(3).copyTo(t_);
 		
 		Mat constrained_3DPts, measured2DPts;
-		applyContraints(dst, Pts3D_vec[0], Rt_vec[0], constrained_3DPts, measured2DPts);
+		applyContraints(dst, Pts3D_vec[0], Rt_all[0], constrained_3DPts, measured2DPts);
 		constrained_3DPts.copyTo(p3_);
 		measured2DPts.copyTo(measuredPts);
 	}
-	else if(good_vec[1] >= good_vec[0] && 
-			good_vec[1] >= good_vec[2] && 
-			good_vec[1] >= good_vec[3])
+	else if(frontPts_rate[1] >= frontPts_rate[0] && 
+			frontPts_rate[1] >= frontPts_rate[2] && 
+			frontPts_rate[1] >= frontPts_rate[3])
 	{
-		front3DPtsOWN = good_vec[1];
-		Rt_vec[1].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Rt_vec[1].col(3).copyTo(t_);
+		front3DPtsOWN = frontPts_rate[1];
+		Rt_all[1].rowRange(0,3).colRange(0,3).copyTo(R_);
+		Rt_all[1].col(3).copyTo(t_);
 		
 		Mat constrained_3DPts, measured2DPts;
-		applyContraints(dst, Pts3D_vec[1], Rt_vec[1], constrained_3DPts, measured2DPts);
+		applyContraints(dst, Pts3D_vec[1], Rt_all[1], constrained_3DPts, measured2DPts);
 		constrained_3DPts.copyTo(p3_);
 		measured2DPts.copyTo(measuredPts);
 	}
-	else if(good_vec[2] >= good_vec[0] && 
-			good_vec[2] >= good_vec[1] && 
-			good_vec[2] >= good_vec[3])
+	else if(frontPts_rate[2] >= frontPts_rate[0] && 
+			frontPts_rate[2] >= frontPts_rate[1] && 
+			frontPts_rate[2] >= frontPts_rate[3])
 	{
-		front3DPtsOWN = good_vec[2];
-		Rt_vec[2].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Mat TEM = Rt_vec[2].col(3) * -1;
+		front3DPtsOWN = frontPts_rate[2];
+		Rt_all[2].rowRange(0,3).colRange(0,3).copyTo(R_);
+		Mat TEM = Rt_all[2].col(3) * -1;
 		TEM.copyTo(t_);
 		
 		Mat constrained_3DPts, measured2DPts;
-		applyContraints(dst, Pts3D_vec[2], Rt_vec[2], constrained_3DPts, measured2DPts);
+		applyContraints(dst, Pts3D_vec[2], Rt_all[2], constrained_3DPts, measured2DPts);
 		constrained_3DPts.copyTo(p3_);
 		measured2DPts.copyTo(measuredPts);
 	}
-	else if(good_vec[3] >= good_vec[0] && 
-			good_vec[3] >= good_vec[1] && 
-			good_vec[3] >= good_vec[2])
+	else if(frontPts_rate[3] >= frontPts_rate[0] && 
+			frontPts_rate[3] >= frontPts_rate[1] && 
+			frontPts_rate[3] >= frontPts_rate[2])
 	{
-		front3DPtsOWN = good_vec[2];
-		Rt_vec[3].rowRange(0,3).colRange(0,3).copyTo(R_);
-		Mat TEMP_ = Rt_vec[3].col(3) * -1;
+		front3DPtsOWN = frontPts_rate[2];
+		Rt_all[3].rowRange(0,3).colRange(0,3).copyTo(R_);
+		Mat TEMP_ = Rt_all[3].col(3) * -1;
 		TEMP_.copyTo(t_);
 		
 		Mat constrained_3DPts, measured2DPts;
-		applyContraints(dst, Pts3D_vec[3], Rt_vec[3], constrained_3DPts, measured2DPts);
+		applyContraints(dst, Pts3D_vec[3], Rt_all[3], constrained_3DPts, measured2DPts);
 		constrained_3DPts.copyTo(p3_);
 		measured2DPts.copyTo(measuredPts);
 	}
@@ -606,6 +598,17 @@ void Vision::pose_AND_3dPts(vector<Point2f> &dst, vector<float> &good_vec, vecto
 	{
 		cout << "No SOLUTION FOUND!!!" << endl;
 		exit(EXIT_FAILURE);
+	}
+}
+
+void Vision::calcReprojErr(Mat &measured, Mat &reprojected, float &rE)
+{
+	if(!measured.empty())
+	{
+		reprojected.copyTo(vPt2D_rep);
+		measured.copyTo(vPt2D_measured);
+		rE = cv::norm(reprojected, measured, NORM_L2)/ (float)reprojected.cols;
+		//cout << "\nreprojection error = "<< rE << endl;
 	}
 }
 
@@ -977,4 +980,46 @@ void Vision::get_info(Mat &matrix, string matrix_name)
 							<< endl;	
 }
 
+void Vision::homography_matrix_inliers(vector<Point2f> &src, vector<Point2f> &dst,
+										vector<int> &ref_kp_idx, vector<int> &kp_idx,
+										vector<vector<DMatch>> &possible_matches,
+										vector<pair<int,int>> &match_idx)
+{
+	vector<Point2f> srcInlier, dstInlier;
+	
+	double ransac_thresh = 3.0;
+	vector<uchar> matching_mask; // ransac
+	
+	Mat H = findHomography(dst, src, CV_RANSAC,
+                                    ransac_thresh,
+                                    matching_mask);
+	
+	int inliers_num = countNonZero(matching_mask);
+	for(size_t nm = 0; nm < matching_mask.size(); nm++)
+	{
+		if(matching_mask[nm])
+		{
+			match_idx.push_back(make_pair(ref_kp_idx[nm], kp_idx[nm]));
+			srcInlier.push_back(src[nm]);
+			dstInlier.push_back(dst[nm]);
+		}
+	}
+	
+	cout << "2D Matches:\n"; 
+	cout << "\tKPS\tMATCHES\tINLIERS\n";
+	cout 	<< '\t' << possible_matches.size() 	<< '\t' 	<< matching_mask.size() 
+			<< '\t' << inliers_num 			<< '\n';
+
+	if (!srcInlier.empty() && !dstInlier.empty() && match_idx.size() >= vMIN_NUM_FEAT)
+	{
+		PoseFromHomographyMatrix(srcInlier, dstInlier, H);
+		cout << "----------------------------------------------------------------" << endl;
+	}
+}
+
+void Vision::PoseFromHomographyMatrix(vector<Point2f> &src, vector<Point2f> &dst, Mat &H)
+{		
+	// TODO: must be added!
+	//decomH(H, R);
+}
 }//namespace ORB_VISLAM

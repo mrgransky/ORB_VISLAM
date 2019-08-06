@@ -26,7 +26,7 @@ void AbsolutePose::set(Mat &T_GT)
 {
 	T_GT.copyTo(T_abs);
 	calcRotation(T_abs);
-	//cout << "T_abs = \n" <<T_abs<< endl;
+	//cout << "\nT_abs = \n" <<T_abs<< endl;
 }
 
 void AbsolutePose::calcRotation(Mat &T)

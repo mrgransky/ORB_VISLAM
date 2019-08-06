@@ -61,7 +61,6 @@ ${GLUT_LIBRARY}
 -lGL
 )
 
-if(FALSE) ## comment block of code in CMakeLists.txt
 add_executable(${PROJECT_NAME}_civit 
 				src/run_civit.cpp
 				src/System.cpp
@@ -71,6 +70,7 @@ add_executable(${PROJECT_NAME}_civit
 				)
 target_link_libraries(${PROJECT_NAME}_civit ${LIBS})
 
+if(FALSE) ## comment block of code in CMakeLists.txt
 add_executable(${PROJECT_NAME}_corridor 
 				src/run_corridor.cpp
 				src/System.cpp

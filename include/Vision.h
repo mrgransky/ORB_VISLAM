@@ -112,7 +112,7 @@ namespace ORB_VISLAM
 			void applyContraints(std::vector<cv::Point2f> &dst, cv::Mat &p3_raw, cv::Mat &Rt, 
 								cv::Mat &p3_front, cv::Mat &origMeasPts);
 								
-			void proj3D_2D(cv::Mat &p3_, cv::Mat &p2_);
+			void proj3D_2D(cv::Mat &p3_, cv::Mat &p2_, cv::Mat &Rt_);
 			void calcReprojErr(cv::Mat &measured, cv::Mat &reprojected, float &rE);
 			void Normalize2DPts(std::vector<cv::Point2f> &src, std::vector<cv::Point2f> &dst,
 								std::vector<cv::Mat> &src_normalized, 
@@ -159,6 +159,16 @@ namespace ORB_VISLAM
 											std::vector<std::vector<cv::DMatch>> &possible_matches,
 											std::vector<std::pair<int,int>> &match_idx);
 			
+			void homography_matrix_inliers(std::vector<cv::Point2f> &src, 
+											std::vector<cv::Point2f> &dst, 
+											std::vector<int> &ref_kp_idx, 
+											std::vector<int> &kp_idx, 
+											std::vector<std::vector<cv::DMatch>> &possible_matches,
+											std::vector<std::pair<int,int>> &match_idx);
+			
+			void PoseFromHomographyMatrix(	std::vector<cv::Point2f> &src, 
+											std::vector<cv::Point2f> &dst,
+											cv::Mat &H);
 			
 			void PoseFromEssentialMatrix(	std::vector<cv::Point2f> &src, 
 											std::vector<cv::Point2f> &dst,

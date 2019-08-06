@@ -155,7 +155,7 @@ int main( int argc, char** argv )
 			<< endl;
 	
 	string vo_file 		= string(argv[1])	+ "VO.txt";
-	string loc_vo_file 	= string(argv[1])	+ "VO_LOC.txt";
+	string loc_vo_file 	= string(argv[1])	+ "VO_loc.txt";
 	
 	string gt_file 		= string(argv[1])	+ "T_GT.txt";
 	string util_file 	= string(argv[1])	+ "util.txt";
